@@ -1,5 +1,6 @@
 import json
 
+#opening the JSON file containing possible goals and actions
 with open("goalsAndActions.json", "r") as file:
     goalsAndActionsJson = json.load(file)
 
@@ -8,6 +9,10 @@ current_top_action = {}
 
 
 def choose_goal(_goal_json):
+    """
+    Function choosing the most important goal from the goal file. Sets the global current_top_goal
+    :param _goal_json: Part of the goalsAndActions JSON file which contains goals
+    """
     global current_top_goal
     # Find the most important goal
     top_goal = _goal_json[0]
@@ -21,6 +26,12 @@ def choose_goal(_goal_json):
 
 
 def get_goal_change(_goal, _action):
+    """
+    Get and integer by how much this action can change this goal
+    :param _goal: One goal form the Goals Json
+    :param _action: One action from the Action Json
+    :return: Returns and integer by how much a specified action can change a specified goal, returns 0 if action cannot change this goal
+    """
     if _goal["name"] == _action["goalsChange"][0]["name"]:
         return _action["goalsChange"][0]["value"]
     else:
