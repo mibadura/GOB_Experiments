@@ -1,0 +1,25 @@
+{
+    "goals": [
+        {"name": "Be-Healthy","value": 4},
+        {"name": "Level-Up","value": 5},
+        {"name": "Do-Many-Quests","value": 2},
+        {"name": "Gather-Resources","value": 3}
+    ],
+    "actions": [
+        {"name": "Fight-Monster",
+            "goalsChange": [{"name": "Level-Up","value": 1},{"name": "Do-Many-Quests","value": 1},{"name": "Be-Healthy","value": -2}]
+        },
+        {"name": "Craft-Item",
+            "goalsChange": [{"name": "Level-Up","value": 1},{"name": "Gather-Resources","value": -2}]
+        },
+        {"name": "Explore-Dungeon",
+            "goalsChange": [{"name": "Do-Many-Quests","value": 1},{"name": "Gather-Resources","value": -2}]
+        },
+        {"name": "Trade-with-NPC",
+            "goalsChange": [{"name": "Level-Up","value": 2},{"name": "Gather-Resources","value": -2}]
+        },
+        {"name": "Eat-Nice-Food",
+            "goalsChange": [{"name": "Be-Healthy","value": 1},{"name": "Gather-Resources","value": -2}]
+        }
+    ]
+}
