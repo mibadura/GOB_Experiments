@@ -30,7 +30,8 @@ def get_goal_change(_goal, _action):
     Get and integer by how much this action can change this goal
     :param _goal: One goal form the Goals Json
     :param _action: One action from the Action Json
-    :return: Returns and integer by how much a specified action can change a specified goal, returns 0 if action cannot change this goal
+    :return: Returns and integer by how much a specified action can change a specified goal, returns 0 if action cannot
+    change this goal
     """
     if _goal["name"] == _action["goalsChange"][0]["name"]:
         return _action["goalsChange"][0]["value"]
@@ -39,6 +40,11 @@ def get_goal_change(_goal, _action):
 
 
 def choose_action(_action_json):
+    """
+    Chooses one of the actions from actions JSON, which changes the top goal the most
+    :param _action_json: Part of the JSON with actions
+    :return: Does not return anything, but sets the current_top_action
+    """
     global current_top_action
     top_action = _action_json[0]
     best_utility = get_goal_change(current_top_goal, _action_json[0])
@@ -54,10 +60,10 @@ def choose_action(_action_json):
 
 def update_goals(_current_top_goal, _current_top_action):
     """
-    dfhfhgfgh
-    :param _current_top_goal: fgfgjh
-    :param _current_top_action: fgjg
-    :return:
+    Changes the values assigned to goals in the JSON
+    :param _current_top_goal: Global current top goal
+    :param _current_top_action: Global current top action
+    :return: Changes the values in the loaded goalsAndActions JSON. Does not update the source JSON file
     """
     global goalsAndActionsJson
     goal_index = 0
@@ -71,7 +77,7 @@ def update_goals(_current_top_goal, _current_top_action):
 
 
 if __name__ == '__main__':
-    for i in range(10):
+    for i in range(10): #executes the whole GOB loop. Choosed the most inportant goal, then the best action for it and then updates the goals.
         print("\nRound", i)
         choose_goal(goalsAndActionsJson["goals"])
         choose_action(goalsAndActionsJson["actions"])
