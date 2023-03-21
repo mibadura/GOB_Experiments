@@ -7,6 +7,12 @@ with open("goalsAndActions.json", "r") as file:
 
 
 def get_goal_change(_goal, _action):
+    """
+    Get the effect of an action on a chosen goal
+    :param _goal: A single goal JSON
+    :param _action: A single action JSON
+    :return: Returns the effects of an action on the goal specified in the args
+    """
     action_effect = 0
     for affectedGoal in _action["goalsChange"]:
 
@@ -18,6 +24,13 @@ def get_goal_change(_goal, _action):
 
 
 def calculate_discontentment(_action,_all_goals):
+    """
+    Loops through all the goals and calculates their values after a chosen action. Calculates the second power of the
+    new goal value and adds it to the overall discontentment. Return this calculated discontentment.
+    :param _action: A single action JSON
+    :param _all_goals: All goals JSON
+    :return: Integer discontentment value
+    """
     discontentment = 0
 
     for goal in _all_goals:
@@ -29,6 +42,12 @@ def calculate_discontentment(_action,_all_goals):
 
 
 def choose_action(_all_actions, _all_goals):
+    """
+    Loops through all actions and chooses the action which lowers discontentment the most.
+    :param _all_actions: All actions JSON
+    :param _all_goals: All goals JSON
+    :return: Returns the best action JSON
+    """
     global current_top_action
     best_action = _all_actions[0]
     best_value = calculate_discontentment(best_action, _all_goals)
@@ -44,6 +63,11 @@ def choose_action(_all_actions, _all_goals):
 
 
 def update_goals(_current_top_action):
+    """
+    Updates the JSON (does not update the JSON file) after using the best action
+    :param _current_top_action: The global current top action
+    :return:
+    """
     global goalsAndActionsJson
 
     for idx, goal in enumerate(goalsAndActionsJson["goals"]):
