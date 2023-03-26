@@ -2,7 +2,7 @@ import json
 
 current_top_action = {}
 
-with open("goalsAndActions.json", "r") as file:
+with open("goalsAndActions_expanded.json", "r") as file:
     goalsAndActionsJson = json.load(file)
 
 
@@ -82,7 +82,7 @@ def update_goals(_current_top_action):
 if __name__ == '__main__':
 
     print("Starting goals are", goalsAndActionsJson["goals"])
-    for i in range(10):
+    for i in range(30):
         print("\nRound",i)
         print("Chosen action:\t", choose_action(goalsAndActionsJson["actions"], goalsAndActionsJson["goals"]))
         print("Goals before:\t", goalsAndActionsJson["goals"])
