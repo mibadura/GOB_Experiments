@@ -1,0 +1,75 @@
+{
+    "comments": {"About this JSON":  "Positive values in actions decrease the discontentment in goals. Negative values have undesired impact on goals."},
+    "goals": [
+        {"name": "Be-Healthy","value": 50},
+        {"name": "Level-Up","value": 45},
+        {"name": "Do-Many-Quests","value": 30},
+        {"name": "Gather-Resources","value": 40},
+        {"name": "Make-Friends","value": 30},
+        {"name": "Learn-Skills","value": 40},
+        {"name": "Gain-Experience","value": 40},
+        {"name": "Earn-Money","value": 30}
+    ],
+    "actions": [
+        {"name":"Fight-Monster",
+            "goalsChange":[
+                {"name":"Be-Healthy","value":-10},
+                {"name":"Level-Up","value":30},
+                {"name":"Do-Many-Quests","value":-10},
+                {"name":"Gather-Resources","value":-10},
+                {"name":"Make-Friends","value":-5},
+                {"name":"Learn-Skills","value":10},
+                {"name":"Gain-Experience","value":15},
+                {"name":"Earn-Money","value":5}
+            ]
+        },
+        {"name":"Craft-Item",
+            "goalsChange":[
+                {"name":"Be-Healthy","value":-1},
+                {"name":"Level-Up","value":15},
+                {"name":"Do-Many-Quests","value":10},
+                {"name":"Gather-Resources","value":-10},
+                {"name":"Make-Friends","value":-1},
+                {"name":"Learn-Skills","value":20},
+                {"name":"Gain-Experience","value":15},
+                {"name":"Earn-Money","value":-1}
+            ]
+        },
+        {"name":"Explore-Dungeon",
+            "goalsChange":[
+                {"name":"Be-Healthy","value":-5},
+                {"name":"Level-Up","value":8},
+                {"name":"Do-Many-Quests","value":-5},
+                {"name":"Gather-Resources","value":10},
+                {"name":"Make-Friends","value":-5},
+                {"name":"Learn-Skills","value":5},
+                {"name":"Gain-Experience","value":15},
+                {"name":"Earn-Money","value":15}
+            ]
+        },
+        {"name":"Trade-with-NPC",
+            "goalsChange":[
+                {"name":"Be-Healthy","value":0},
+                {"name":"Level-Up","value":10},
+                {"name":"Do-Many-Quests","value":10},
+                {"name":"Gather-Resources","value":-10},
+                {"name":"Make-Friends","value":15},
+                {"name":"Learn-Skills","value":5},
+                {"name":"Gain-Experience","value":10},
+                {"name":"Earn-Money","value":15}
+            ]
+        },
+        {"name":"Train",
+            "goalsChange":[
+                {"name":"Be-Healthy","value":20},
+                {"name":"Level-Up","value":10},
+                {"name":"Do-Many-Quests","value":-5},
+                {"name":"Gather-Resources","value":-5},
+                {"name":"Make-Friends","value":-5},
+                {"name":"Learn-Skills","value":15},
+                {"name":"Gain-Experience","value":10},
+                {"name":"Earn-Money","value":-1}
+            ]
+        }
+    ]
+}
