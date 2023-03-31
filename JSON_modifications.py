@@ -31,30 +31,47 @@ def remove_action(_loaded_json, action_name):
             action_found = True
 
     if action_found:
-        print("Removed action:", action_name)
+        return f"""Removed action: {action_name}"""
     else:
-        print("Action",action_name,"not found")
+        return f"""Action {action_name} not found"""
     save_output(_loaded_json, output_json_name)
 
 
-def add_action(_loaded_json, action_definition):
+def action_already_there(_loaded_json, action_definition):
     action_already_there = False
     for idx, action in enumerate(_loaded_json["actions"]):
         if action["name"] == action_definition["name"]:
             action_already_there = True
             break
+    return action_already_there
 
-    if action_already_there:
-        print("Action already there")
-        pass
+
+def add_action(_loaded_json, action_definition):
+
+    if action_already_there(_loaded_json, action_definition):
+        return f"""Action {action_definition["name"]} already there"""
     else:
         _loaded_json["actions"].append(action_definition)
-        print("Added action:", action_definition["name"])
+        return f"""Added action: {action_definition["name"]}"""
 
     save_output(_loaded_json, output_json_name)
 
 
-remove_action(loaded_json, "Fight-Monster")
-remove_action(loaded_json, "Explore-Dungeon")
-remove_action(loaded_json, "Explore-Dungeonxxx")
-add_action(loaded_json, mockup_action)
+def add_or_replace_action(_loaded_json, action_definition):
+    if action_already_there(_loaded_json, action_definition):
+        remove_action(_loaded_json, action_definition["name"])
+        _loaded_json["actions"].append(action_definition)
+        return f"""Action {action_definition["name"]} replaced with a new one"""
+    else:
+        _loaded_json["actions"].append(action_definition)
+        return f"""Added action: {action_definition["name"]}"""
+
+    save_output(_loaded_json, output_json_name)
+
+
+print(remove_action(loaded_json, "Fight-Monster"))
+print(remove_action(loaded_json, "Explore-Dungeon"))
+print(remove_action(loaded_json, "Explore-Dungeonxxx"))
+print(add_action(loaded_json, mockup_action))
+print(add_action(loaded_json, mockup_action))
+print(add_or_replace_action(loaded_json, mockup_action))

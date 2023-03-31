@@ -1,5 +1,10 @@
 {
     "comments": {"About this JSON":  "Positive values in actions decrease the discontentment in goals. Negative values have undesired impact on goals."},
+    "stats": {
+        "money": 100,
+        "health": 100,
+        "level": 1
+    },
     "goals": [
         {"name": "Be-Healthy","value": 50},
         {"name": "Level-Up","value": 45},
@@ -21,6 +26,10 @@
                 {"name":"Learn-Skills","value":10},
                 {"name":"Gain-Experience","value":15},
                 {"name":"Earn-Money","value":5}
+            ],
+            "preconditions": [
+                {"where": "stats", "what": "health", "logical_test": ">", "value":  50},
+                {"where": "stats", "what": "level", "logical_test": ">=", "value":  5}
             ]
         },
         {"name":"Craft-Item",
@@ -33,6 +42,9 @@
                 {"name":"Learn-Skills","value":20},
                 {"name":"Gain-Experience","value":15},
                 {"name":"Earn-Money","value":-1}
+            ],
+            "preconditions": [
+                {"where": "stats", "what": "level", "logical_test": ">=", "value":  2}
             ]
         },
         {"name":"Explore-Dungeon",
@@ -45,7 +57,8 @@
                 {"name":"Learn-Skills","value":5},
                 {"name":"Gain-Experience","value":15},
                 {"name":"Earn-Money","value":15}
-            ]
+            ],
+            "preconditions": []
         },
         {"name":"Trade-with-NPC",
             "goalsChange":[
@@ -57,6 +70,9 @@
                 {"name":"Learn-Skills","value":5},
                 {"name":"Gain-Experience","value":10},
                 {"name":"Earn-Money","value":15}
+            ],
+            "preconditions": [
+                {"where": "stats", "what": "money", "logical_test": ">=", "value":  50}
             ]
         },
         {"name":"Train",
@@ -69,7 +85,8 @@
                 {"name":"Learn-Skills","value":15},
                 {"name":"Gain-Experience","value":10},
                 {"name":"Earn-Money","value":-1}
-            ]
+            ],
+            "preconditions": []
         }
     ]
 }
