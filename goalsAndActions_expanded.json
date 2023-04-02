@@ -1,5 +1,8 @@
 {
-    "comments": {"About this JSON":  "Positive values in actions decrease the discontentment in goals. Negative values have undesired impact on goals."},
+    "comments": {
+        "goalsChange":  "Positive values in actions decrease the discontentment in goals. Negative values have undesired impact on goals.",
+        "statsChange":  "Values in statsChange are not inverted. money '-10' will decrease money by 10"
+    },
     "stats": {
         "money": 100,
         "health": 100,
@@ -27,6 +30,11 @@
                 {"name":"Gain-Experience","value":15},
                 {"name":"Earn-Money","value":5}
             ],
+            "statsChange":[
+                {"name":"money","value":0},
+                {"name":"health","value":-10},
+                {"name":"level","value":2}
+            ],
             "preconditions": [
                 {"where": "stats", "what": "health", "logical_test": ">", "value":  50},
                 {"where": "stats", "what": "level", "logical_test": ">=", "value":  5}
@@ -43,6 +51,11 @@
                 {"name":"Gain-Experience","value":15},
                 {"name":"Earn-Money","value":-1}
             ],
+            "statsChange":[
+                {"name":"money","value":0},
+                {"name":"health","value":0},
+                {"name":"level","value":1}
+            ],
             "preconditions": [
                 {"where": "stats", "what": "level", "logical_test": ">=", "value":  2}
             ]
@@ -58,6 +71,11 @@
                 {"name":"Gain-Experience","value":15},
                 {"name":"Earn-Money","value":15}
             ],
+            "statsChange":[
+                {"name":"money","value":5},
+                {"name":"health","value":-1},
+                {"name":"level","value":1}
+            ],
             "preconditions": []
         },
         {"name":"Trade-with-NPC",
@@ -70,6 +88,11 @@
                 {"name":"Learn-Skills","value":5},
                 {"name":"Gain-Experience","value":10},
                 {"name":"Earn-Money","value":15}
+            ],
+            "statsChange":[
+                {"name":"money","value":-30},
+                {"name":"health","value":0},
+                {"name":"level","value":1}
             ],
             "preconditions": [
                 {"where": "stats", "what": "money", "logical_test": ">=", "value":  50}
@@ -85,6 +108,11 @@
                 {"name":"Learn-Skills","value":15},
                 {"name":"Gain-Experience","value":10},
                 {"name":"Earn-Money","value":-1}
+            ],
+            "statsChange":[
+                {"name":"money","value":0},
+                {"name":"health","value":5},
+                {"name":"level","value":1}
             ],
             "preconditions": []
         }

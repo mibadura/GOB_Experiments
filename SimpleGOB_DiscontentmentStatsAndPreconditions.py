@@ -1,9 +1,19 @@
 import json
+import operator
 
 current_top_action = {}
 
 with open("goalsAndActions_expanded.json", "r") as file:
     goalsAndActionsJson = json.load(file)
+
+ops = {
+    ">": operator.gt,
+    ">=": operator.ge,
+    "<": operator.lt,
+    "<=": operator.le,
+    "==": operator.eq,
+    "!=": operator.ne,
+}
 
 
 def get_goal_change(_goal, _action):
@@ -41,6 +51,29 @@ def calculate_discontentment(_action,_all_goals):
     return discontentment
 
 
+def preconditions_met(_json_stats, _json_action):
+
+    preconditions_met_bool = True
+
+    for idx, precondition in enumerate(_json_action["preconditions"]):
+
+        if precondition["where"] == "stats":
+            current_value = _json_stats[precondition["what"]]
+            precondition_value = precondition["value"]
+            logical_test_str = precondition["logical_test"]
+
+            logical_test_result = ops[precondition["logical_test"]](current_value, precondition_value)
+
+            if not logical_test_result:
+                preconditions_met_bool = False
+
+            print(f"""Checking stat #{idx} - {precondition["what"]}, current value: \t{current_value}""")
+            print(f"""Logical test: {precondition["what"]} {logical_test_str} {precondition_value} - Result: {logical_test_result}""")
+
+    if preconditions_met_bool:
+        print("Success - conditions met")
+    else:
+        print("Fail - not all conditions met")
 def choose_action(_all_actions, _all_goals):
     """
     Loops through all actions and chooses the action which lowers discontentment the most.
@@ -79,12 +112,17 @@ def update_goals(_current_top_action):
             goalsAndActionsJson["goals"][idx]["value"] = 0
 
 
-if __name__ == '__main__':
-
+def main():
     print("Starting goals are", goalsAndActionsJson["goals"])
     for i in range(30):
-        print("\nRound",i)
+        print("\nRound", i)
         print("Chosen action:\t", choose_action(goalsAndActionsJson["actions"], goalsAndActionsJson["goals"]))
         print("Goals before:\t", goalsAndActionsJson["goals"])
         update_goals(current_top_action)
         print("Goals are now:\t", goalsAndActionsJson["goals"])
+        preconditions_met(goalsAndActionsJson["stats"], goalsAndActionsJson["actions"][0])
+
+
+if __name__ == '__main__':
+    main()
+
