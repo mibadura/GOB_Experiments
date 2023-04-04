@@ -37,7 +37,7 @@
             ],
             "preconditions": [
                 {"where": "stats", "what": "health", "logical_test": ">", "value":  50},
-                {"where": "stats", "what": "level", "logical_test": ">=", "value":  5}
+                {"where": "stats", "what": "level", "logical_test": ">=", "value":  2}
             ]
         },
         {"name":"Craft-Item",
@@ -73,10 +73,10 @@
             ],
             "statsChange":[
                 {"name":"money","value":5},
-                {"name":"health","value":-1},
-                {"name":"level","value":1}
+                {"name":"health","value":-10},
+                {"name":"level","value":0}
             ],
-            "preconditions": []
+            "preconditions": [{"where": "stats", "what": "health", "logical_test": ">=", "value":  75}]
         },
         {"name":"Trade-with-NPC",
             "goalsChange":[
