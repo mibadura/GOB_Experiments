@@ -79,12 +79,16 @@ def update_goals(_current_top_action):
             goalsAndActionsJson["goals"][idx]["value"] = 0
 
 
-if __name__ == '__main__':
-
+def main():
     print("Starting goals are", goalsAndActionsJson["goals"])
     for i in range(30):
-        print("\nRound",i)
+        print("\nRound", i)
         print("Chosen action:\t", choose_action(goalsAndActionsJson["actions"], goalsAndActionsJson["goals"]))
         print("Goals before:\t", goalsAndActionsJson["goals"])
         update_goals(current_top_action)
         print("Goals are now:\t", goalsAndActionsJson["goals"])
+
+
+if __name__ == '__main__':
+    main()
+
