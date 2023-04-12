@@ -1,0 +1,120 @@
+{
+    "comments": {
+        "goalsChange":  "Positive values in actions decrease the discontentment in goals. Negative values have undesired impact on goals.",
+        "statsChange":  "Values in statsChange are not inverted. money '-10' will decrease money by 10"
+    },
+    "stats": {
+        "money": 100,
+        "health": 100,
+        "level": 1
+    },
+    "goals": {
+        "Be-Healthy": 50,
+        "Level-Up": 45,
+        "Do-Many-Quests": 30,
+        "Gather-Resources": 40,
+        "Make-Friends": 30,
+        "Learn-Skills": 40,
+        "Gain-Experience": 40,
+        "Earn-Money": 30
+    },
+    "actions": [
+        {"name":"Fight-Monster",
+            "goalsChange":[
+                {"name":"Be-Healthy","value":-10},
+                {"name":"Level-Up","value":30},
+                {"name":"Do-Many-Quests","value":-10},
+                {"name":"Gather-Resources","value":-10},
+                {"name":"Make-Friends","value":-5},
+                {"name":"Learn-Skills","value":10},
+                {"name":"Gain-Experience","value":15},
+                {"name":"Earn-Money","value":5}
+            ],
+            "statsChange":[
+                {"name":"money","value":0},
+                {"name":"health","value":-10},
+                {"name":"level","value":2}
+            ],
+            "preconditions": [
+                {"where": "stats", "what": "health", "logical_test": ">", "value":  50},
+                {"where": "stats", "what": "level", "logical_test": ">=", "value":  2}
+            ]
+        },
+        {"name":"Craft-Item",
+            "goalsChange":[
+                {"name":"Be-Healthy","value":-1},
+                {"name":"Level-Up","value":15},
+                {"name":"Do-Many-Quests","value":10},
+                {"name":"Gather-Resources","value":-10},
+                {"name":"Make-Friends","value":-1},
+                {"name":"Learn-Skills","value":20},
+                {"name":"Gain-Experience","value":15},
+                {"name":"Earn-Money","value":-1}
+            ],
+            "statsChange":[
+                {"name":"money","value":0},
+                {"name":"health","value":0},
+                {"name":"level","value":1}
+            ],
+            "preconditions": [
+                {"where": "stats", "what": "level", "logical_test": ">=", "value":  2}
+            ]
+        },
+        {"name":"Explore-Dungeon",
+            "goalsChange":[
+                {"name":"Be-Healthy","value":-5},
+                {"name":"Level-Up","value":8},
+                {"name":"Do-Many-Quests","value":-5},
+                {"name":"Gather-Resources","value":10},
+                {"name":"Make-Friends","value":0},
+                {"name":"Learn-Skills","value":5},
+                {"name":"Gain-Experience","value":15},
+                {"name":"Earn-Money","value":15}
+            ],
+            "statsChange":[
+                {"name":"money","value":5},
+                {"name":"health","value":-10},
+                {"name":"level","value":0}
+            ],
+            "preconditions": [{"where": "stats", "what": "health", "logical_test": ">=", "value":  75}]
+        },
+        {"name":"Trade-with-NPC",
+            "goalsChange":[
+                {"name":"Be-Healthy","value":0},
+                {"name":"Level-Up","value":10},
+                {"name":"Do-Many-Quests","value":10},
+                {"name":"Gather-Resources","value":-10},
+                {"name":"Make-Friends","value":15},
+                {"name":"Learn-Skills","value":5},
+                {"name":"Gain-Experience","value":10},
+                {"name":"Earn-Money","value":15}
+            ],
+            "statsChange":[
+                {"name":"money","value":-30},
+                {"name":"health","value":0},
+                {"name":"level","value":1}
+            ],
+            "preconditions": [
+                {"where": "stats", "what": "money", "logical_test": ">=", "value":  50}
+            ]
+        },
+        {"name":"Train",
+            "goalsChange":[
+                {"name":"Be-Healthy","value":20},
+                {"name":"Level-Up","value":10},
+                {"name":"Do-Many-Quests","value":-5},
+                {"name":"Gather-Resources","value":-5},
+                {"name":"Make-Friends","value":-5},
+                {"name":"Learn-Skills","value":15},
+                {"name":"Gain-Experience","value":10},
+                {"name":"Earn-Money","value":-1}
+            ],
+            "statsChange":[
+                {"name":"money","value":0},
+                {"name":"health","value":5},
+                {"name":"level","value":1}
+            ],
+            "preconditions": []
+        }
+    ]
+}
