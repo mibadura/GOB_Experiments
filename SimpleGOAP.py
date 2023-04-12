@@ -2,10 +2,12 @@ import json
 import operator
 import sys
 import matplotlib.pyplot as plt
+import numpy as np
+
 
 current_top_action = {}
 
-with open("goalsAndActions_expanded.json", "r") as file:
+with open("setup.json", "r") as file:
     goalsAndActionsJson = json.load(file)
 
 ops = {
@@ -27,8 +29,7 @@ def get_goal_change(_goal, _action):
     """
     action_effect = 0
     for affectedGoal in _action["goalsChange"]:
-
-        if _goal["name"] == affectedGoal["name"]:
+        if _goal == affectedGoal["name"]:
             action_effect -= affectedGoal["value"]
 
     # print("Action",_action["name"], "will change",_goal["name"],"by",action_effect )
@@ -45,8 +46,8 @@ def calculate_discontentment(_action, _all_goals):
     """
     discontentment = 0.0
 
-    for goal in _all_goals:
-        new_goal_value = goal["value"] + get_goal_change(goal, _action)
+    for goal_name, goal_value in _all_goals.items():
+        new_goal_value = goal_value + get_goal_change(goal_name, _action)
         discontentment += pow(new_goal_value, 2)
 
     return discontentment
@@ -133,13 +134,14 @@ def update_goals(_current_top_action):
     """
     global goalsAndActionsJson
 
-    for idx, goal in enumerate(goalsAndActionsJson["goals"]):
-        goal_name = goal["name"]
-        new_goal_value = goal["value"] + get_goal_change(goal, _current_top_action)
-        if new_goal_value > 0:
-            goalsAndActionsJson["goals"][idx]["value"] = new_goal_value
+    for goal_name, goal_value in goalsAndActionsJson["goals"].items():
+        new_goal_value = goal_value + get_goal_change(goal_name, _current_top_action)
+        if 0 < new_goal_value < 100:
+            goalsAndActionsJson["goals"][goal_name] = new_goal_value
+        elif new_goal_value >= 100:
+            goalsAndActionsJson["goals"][goal_name] = 100
         else:
-            goalsAndActionsJson["goals"][idx]["value"] = 0
+            goalsAndActionsJson["goals"][goal_name] = 0
 
 
 def main():
@@ -147,6 +149,7 @@ def main():
     all_chosen_actions = []
     stats_list = []
     goals_list = []
+    goal_values = []
     for i in range(100):
         print("\nRound", i)
         print("Stats:", goalsAndActionsJson["stats"])
@@ -157,14 +160,17 @@ def main():
         all_chosen_actions.append(chosen_action["name"])
         print("Goals before:\t", goalsAndActionsJson["goals"])
         update_goals(current_top_action)
+        goal_values.append(list(goalsAndActionsJson["goals"].values()))
         update_stats(goalsAndActionsJson["stats"], current_top_action)
         print("Goals are now:\t", goalsAndActionsJson["goals"])
 
     print("all_chosen_actions", all_chosen_actions)
     print("stats_list", stats_list)
+    goal_values = np.transpose(goal_values)  # transposing extracted goal values so that every goal is in its own array
 
+    # Plot the stats values
+    plt.figure()
     stat_keys = list(goalsAndActionsJson["stats"].keys())
-
     for key in stat_keys:
         stat_values = [d[key] for d in stats_list]
         plt.plot(stat_values, label=key)
@@ -175,7 +181,17 @@ def main():
     plt.legend()
     plt.savefig('stats_changes.jpg')
 
-    # lets make goals like stats o the JSON and plot the same thing for them later
+    # Plot the goal values
+    plt.figure()
+    goal_keys = list(goalsAndActionsJson["goals"].keys())
+    for key, values in zip(goal_keys, goal_values):
+        plt.plot(values, label=key)
+
+    plt.title('Goals over time')
+    plt.xlabel('Iteration')
+    plt.ylabel('Value')
+    plt.legend()
+    plt.savefig('goals_changes.jpg')
 
 
 if __name__ == '__main__':

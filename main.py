@@ -1,5 +1,6 @@
 import SimpleGOB_Discontentment
 import SimpleGOB_DiscontentmentStatsAndPreconditions
+import SimpleGOAP
 
 if __name__ == '__main__':
     useStatsAndPreconditions = input("Should we use Stats and Preconditions? (Y)/N ")
@@ -9,4 +10,4 @@ if __name__ == '__main__':
         SimpleGOB_Discontentment.main()
     else:
         print("\nrunning SimpleGOB_DiscontentmentStatsAndPreconditions\n", "-" * 20, "\n")
-        SimpleGOB_DiscontentmentStatsAndPreconditions.main()
+        SimpleGOAP.main()
