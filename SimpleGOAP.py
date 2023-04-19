@@ -144,13 +144,23 @@ def update_goals(_current_top_action):
             goalsAndActionsJson["goals"][goal_name] = 0
 
 
+def recurring_changes_update():
+    global goalsAndActionsJson
+
+    for recurring_goal_name, recurring_goal_value in goalsAndActionsJson["recurring_changes"]["changed_goals"].items():
+        for goal_name, goal_value in goalsAndActionsJson["goals"].items():
+            if recurring_goal_name == goal_name:
+                goal_value += recurring_goal_value
+                goalsAndActionsJson["goals"][goal_name] = goal_value
+
+
 def main():
     print("Starting goals are", goalsAndActionsJson["goals"])
     all_chosen_actions = []
     stats_list = []
     goals_list = []
     goal_values = []
-    for i in range(100):
+    for i in range(50):
         print("\nRound", i)
         print("Stats:", goalsAndActionsJson["stats"])
         stats_list.append(goalsAndActionsJson["stats"].copy())
@@ -159,6 +169,7 @@ def main():
         print("Chosen action:\t", chosen_action)
         all_chosen_actions.append(chosen_action["name"])
         print("Goals before:\t", goalsAndActionsJson["goals"])
+        recurring_changes_update()
         update_goals(current_top_action)
         goal_values.append(list(goalsAndActionsJson["goals"].values()))
         update_stats(goalsAndActionsJson["stats"], current_top_action)
