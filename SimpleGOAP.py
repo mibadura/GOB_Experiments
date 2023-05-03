@@ -3,11 +3,12 @@ import operator
 import sys
 import matplotlib.pyplot as plt
 import numpy as np
+import math
 
 
 current_top_action = {}
 
-with open("setup.json", "r") as file:
+with open("setup_with_percentages.json", "r") as file:
     goalsAndActionsJson = json.load(file)
 
 ops = {
@@ -20,19 +21,24 @@ ops = {
 }
 
 
-def get_goal_change(_goal, _action):
+def get_goal_change(_goal_name, _goal_value, _action):
     """
     Get the effect of an action on a chosen goal
-    :param _goal: A single goal JSON
+    :param _goal_value: A single goal value
+    :param _goal_name: A single goal name
     :param _action: A single action JSON
     :return: Returns the effects of an action on the goal specified in the args
     """
     action_effect = 0
     for affectedGoal in _action["goalsChange"]:
-        if _goal == affectedGoal["name"]:
-            action_effect -= affectedGoal["value"]
+        if _goal_name == affectedGoal["name"]:
+            if isinstance(affectedGoal["value"], str) and '%' in affectedGoal["value"]:
+                percentage_value = float(affectedGoal["value"].strip('%')) / 100
+                action_effect -= math.ceil(_goal_value * percentage_value)
+            else:
+                action_effect -= affectedGoal["value"]
 
-    # print("Action",_action["name"], "will change",_goal["name"],"by",action_effect )
+    # print("Action",_action["name"], "will change",_goal_name["name"],"by",action_effect )
     return action_effect
 
 
@@ -47,7 +53,7 @@ def calculate_discontentment(_action, _all_goals):
     discontentment = 0.0
 
     for goal_name, goal_value in _all_goals.items():
-        new_goal_value = goal_value + get_goal_change(goal_name, _action)
+        new_goal_value = goal_value + get_goal_change(goal_name, goal_value, _action)
         if new_goal_value >= 100:
             new_goal_value = 100
         elif new_goal_value < 0:
@@ -113,15 +119,16 @@ def choose_action(_all_actions, _all_goals):
     current_top_action = best_action
 
     if best_action:
-        return best_action
+        return best_action, best_value
     else:
         print("No action can be chosen. Closing the game.")
         sys.exit()
 
 
-def update_stats(_json_stats, _json_action):
+def update_stats(_json_stats, _json_action, _chosen_action_discontentment):
     global goalsAndActionsJson
 
+    goalsAndActionsJson["stats"]["discontentment"] = _chosen_action_discontentment
     stats_change = _json_action["statsChange"]
     if stats_change:
         for stat_change in stats_change:
@@ -139,7 +146,7 @@ def update_goals(_current_top_action):
     global goalsAndActionsJson
 
     for goal_name, goal_value in goalsAndActionsJson["goals"].items():
-        new_goal_value = goal_value + get_goal_change(goal_name, _current_top_action)
+        new_goal_value = goal_value + get_goal_change(goal_name, goal_value, _current_top_action)
         if 0 < new_goal_value < 100:
             goalsAndActionsJson["goals"][goal_name] = new_goal_value
         elif new_goal_value >= 100:
@@ -158,25 +165,25 @@ def recurring_changes_update():
                 goalsAndActionsJson["goals"][goal_name] = goal_value
 
 
-def main():
+def main(_iterations):
     print("Starting goals are", goalsAndActionsJson["goals"])
     all_chosen_actions = []
     stats_list = []
     goals_list = []
     goal_values = []
-    for i in range(100):
+    for i in range(_iterations):
         print("\nRound", i)
         print("Stats:", goalsAndActionsJson["stats"])
         stats_list.append(goalsAndActionsJson["stats"].copy())
         goals_list.append(goalsAndActionsJson["goals"].copy())
-        chosen_action = choose_action(goalsAndActionsJson["actions"], goalsAndActionsJson["goals"])
+        chosen_action, chosen_action_discontentment = choose_action(goalsAndActionsJson["actions"], goalsAndActionsJson["goals"])
         print("Chosen action:\t", chosen_action)
         all_chosen_actions.append(chosen_action["name"])
         print("Goals before:\t", goalsAndActionsJson["goals"])
         recurring_changes_update()
         update_goals(current_top_action)
         goal_values.append(list(goalsAndActionsJson["goals"].values()))
-        update_stats(goalsAndActionsJson["stats"], current_top_action)
+        update_stats(goalsAndActionsJson["stats"], current_top_action, chosen_action_discontentment)
         print("Goals are now:\t", goalsAndActionsJson["goals"])
 
     print("all_chosen_actions", all_chosen_actions)
@@ -186,7 +193,7 @@ def main():
     # Plot the stats values
     plt.figure()
     stat_keys = list(goalsAndActionsJson["stats"].keys())
-    for key in stat_keys:
+    for key in stat_keys[1:]:
         stat_values = [d[key] for d in stats_list]
         plt.plot(stat_values, label=key)
 

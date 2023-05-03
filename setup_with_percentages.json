@@ -4,6 +4,7 @@
         "statsChange":  "Values in statsChange are not inverted. money '-10' will decrease money by 10"
     },
     "stats": {
+        "discontentment": 0,
         "money": 100,
         "health": 100,
         "level": 1
@@ -22,9 +23,9 @@
     },
     "recurring_changes": {
         "changed_goals": {
-            "Dont-Be-Hungry": -2,
-            "Dont-Be-Bored": -2,
-            "Gain-Experience": -2,
+            "Dont-Be-Hungry": -5,
+            "Dont-Be-Bored": -5,
+            "Gain-Experience": -5,
             "Make-Friends": -1
         },
         "changed_stats": {
@@ -43,7 +44,7 @@
                 {"name":"Gain-Experience","value":15},
                 {"name":"Earn-Money","value":5},
                 {"name":"Dont-Be-Hungry","value":-10},
-                {"name":"Dont-Be-Bored","value":10}
+                {"name":"Dont-Be-Bored","value":"80%"}
             ],
             "statsChange":[
                 {"name":"money","value":0},
@@ -86,7 +87,7 @@
                 {"name":"Learn-Skills","value":0},
                 {"name":"Gain-Experience","value":1},
                 {"name":"Earn-Money","value":-1},
-                {"name":"Dont-Be-Hungry","value":30},
+                {"name":"Dont-Be-Hungry","value":"50%"},
                 {"name":"Dont-Be-Bored","value":10}
             ],
             "statsChange":[
@@ -150,7 +151,7 @@
                 {"name":"Gain-Experience","value":10},
                 {"name":"Earn-Money","value":-1},
                 {"name":"Dont-Be-Hungry","value":-10},
-                {"name":"Dont-Be-Bored","value":-10}
+                {"name":"Dont-Be-Bored","value":"50%"}
             ],
             "statsChange":[
                 {"name":"money","value":0},

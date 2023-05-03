@@ -10,4 +10,4 @@ if __name__ == '__main__':
         SimpleGOB_Discontentment.main()
     else:
         print("\nrunning SimpleGOAP\n", "-" * 20, "\n")
-        SimpleGOAP.main()
+        SimpleGOAP.main(100)
