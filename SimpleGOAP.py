@@ -48,6 +48,10 @@ def calculate_discontentment(_action, _all_goals):
 
     for goal_name, goal_value in _all_goals.items():
         new_goal_value = goal_value + get_goal_change(goal_name, _action)
+        if new_goal_value >= 100:
+            new_goal_value = 100
+        elif new_goal_value < 0:
+            new_goal_value = 0
         discontentment += pow(new_goal_value, 2)
 
     return discontentment
@@ -160,7 +164,7 @@ def main():
     stats_list = []
     goals_list = []
     goal_values = []
-    for i in range(50):
+    for i in range(100):
         print("\nRound", i)
         print("Stats:", goalsAndActionsJson["stats"])
         stats_list.append(goalsAndActionsJson["stats"].copy())
