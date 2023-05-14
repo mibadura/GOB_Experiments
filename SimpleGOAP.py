@@ -193,7 +193,7 @@ def main(_iterations):
     # Plot the stats values
     plt.figure()
     stat_keys = list(goalsAndActionsJson["stats"].keys())
-    for key in stat_keys[1:]:
+    for key in stat_keys[0:]:
         stat_values = [d[key] for d in stats_list]
         plt.plot(stat_values, label=key)
 
