@@ -215,6 +215,9 @@ def main(_iterations):
     plt.legend()
     plt.savefig('goals_changes.jpg')
 
+    print("All chosen acitons:\n", all_chosen_actions)
+    print("All stats:\n", stats_list)
+    print("All goals:\n", goal_values)
 
 if __name__ == '__main__':
     main()

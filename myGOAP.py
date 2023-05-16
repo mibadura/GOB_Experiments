@@ -38,6 +38,10 @@ class WorldModel:
     def calculate_current_discontentment(self):
         discontentment = 0.0
         for goal_name, goal_value in self.setup["goals"].items():
+            if goal_value >= 100:
+                goal_value = 100
+            elif goal_value < 0:
+                goal_value = 0
             discontentment += pow(goal_value, 2)
         return discontentment
 
@@ -121,7 +125,9 @@ def plan_action(world_model, max_depth):
     best_value = float('inf')
 
     while current_depth >= 0:
+        print("\t"*current_depth,"Curr depth", current_depth)
         current_value = models[current_depth].calculate_current_discontentment()
+        print("\t" * current_depth, "Curr value", current_value)
 
         if current_depth >= max_depth:
             if current_value < best_value:
@@ -134,17 +140,18 @@ def plan_action(world_model, max_depth):
         while not all_actions_were_checked:
             if action_indices[current_depth] < len(models[current_depth].setup["actions"]):
                 next_action = models[current_depth].setup["actions"][action_indices[current_depth]]
+                print("\t"*current_depth,"Evaluating action:", next_action['name'])
                 action_indices[current_depth] += 1
                 if models[current_depth].preconditions_met(next_action):
                     all_actions_were_checked = False
                     break
                 else:
-                    #print(next_action["name"], "precons not met")
+                    print("\t"*current_depth,next_action["name"], "precons not met")
                     pass
             else:
                 all_actions_were_checked = True
 
-        #print("Curr depth", current_depth)
+
         if not all_actions_were_checked:
             #print("Trying action", next_action["name"]," idx ",action_indices[current_depth]-1)
             models[current_depth + 1] = copy.deepcopy(models[current_depth])
@@ -155,8 +162,46 @@ def plan_action(world_model, max_depth):
             action_indices[current_depth] = 0  # Reset action index for this depth
             current_depth -= 1
 
+    # while current_depth >= 0:
+    #     current_value = models[current_depth].calculate_current_discontentment()
+    #
+    #     if current_depth >= max_depth or action_indices[current_depth] == len(models[current_depth].setup["actions"]):
+    #         if current_value < best_value:
+    #             best_value = current_value
+    #             best_action = actions[0]
+    #         current_depth -= 1
+    #         continue
+    #
+    #     # Find the next valid action
+    #     while action_indices[current_depth] < len(models[current_depth].setup["actions"]):
+    #         next_action = models[current_depth].setup["actions"][action_indices[current_depth]]
+    #         action_indices[current_depth] += 1
+    #         if models[current_depth].preconditions_met(next_action):
+    #             break
+    #     else:
+    #         # All actions have been checked, so go back to the outer loop
+    #         action_indices[current_depth] = 0  # Reset action index for this depth
+    #         current_depth -= 1
+    #         continue
+    #
+    #     # Apply the valid action found and increase the depth
+    #     models[current_depth + 1] = copy.deepcopy(models[current_depth])
+    #     actions[current_depth] = next_action
+    #     models[current_depth + 1].apply_action(next_action)
+    #     current_depth += 1
+
     #print("Best action:",best_action["name"], "best value:",best_value)
+    print("best_action",best_action['name'],"best_value",best_value)
     return best_action, best_value
+
+
+def recurring_changes_update(goals_and_actions_json):
+
+    for recurring_goal_name, recurring_goal_value in goals_and_actions_json["recurring_changes"]["changed_goals"].items():
+        for goal_name, goal_value in goals_and_actions_json["goals"].items():
+            if recurring_goal_name == goal_name:
+                goal_value += recurring_goal_value
+                goals_and_actions_json["goals"][goal_name] = goal_value
 
 
 def plot_goals(goals_list):
@@ -209,6 +254,7 @@ def main(iterations):
         if chosen_action:
             #print("Chosen action:\t", chosen_action)
             all_chosen_actions.append(chosen_action["name"])
+            recurring_changes_update(goals_and_actions_json)
             world_model.apply_action(chosen_action, chosen_action_discontentment)
             goal_values.append(list(goals_and_actions_json["goals"].values()))
             goals_and_actions_json["goals"] = world_model.setup["goals"]
@@ -221,3 +267,6 @@ def main(iterations):
     plot_goals(goals_list)
     plot_stats(stats_list)
 
+    print("All chosen acitons:\n",all_chosen_actions)
+    print("All stats:\n", stats_list)
+    print("All goals:\n", goal_values)
