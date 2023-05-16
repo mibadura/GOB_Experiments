@@ -201,7 +201,7 @@ def main(_iterations):
     plt.xlabel('Iteration')
     plt.ylabel('Value')
     plt.legend()
-    plt.savefig('stats_changes.jpg')
+    plt.savefig('stats_changes.jpg', dpi=300)
 
     # Plot the goal values
     plt.figure()
@@ -213,11 +213,11 @@ def main(_iterations):
     plt.xlabel('Iteration')
     plt.ylabel('Value')
     plt.legend()
-    plt.savefig('goals_changes.jpg')
+    plt.savefig('goals_changes.jpg', dpi=300)
 
     print("All chosen acitons:\n", all_chosen_actions)
     print("All stats:\n", stats_list)
-    print("All goals:\n", goal_values)
+    # print("All goals:\n", goal_values)
 
 if __name__ == '__main__':
     main()

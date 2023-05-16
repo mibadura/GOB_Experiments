@@ -162,34 +162,6 @@ def plan_action(world_model, max_depth):
             action_indices[current_depth] = 0  # Reset action index for this depth
             current_depth -= 1
 
-    # while current_depth >= 0:
-    #     current_value = models[current_depth].calculate_current_discontentment()
-    #
-    #     if current_depth >= max_depth or action_indices[current_depth] == len(models[current_depth].setup["actions"]):
-    #         if current_value < best_value:
-    #             best_value = current_value
-    #             best_action = actions[0]
-    #         current_depth -= 1
-    #         continue
-    #
-    #     # Find the next valid action
-    #     while action_indices[current_depth] < len(models[current_depth].setup["actions"]):
-    #         next_action = models[current_depth].setup["actions"][action_indices[current_depth]]
-    #         action_indices[current_depth] += 1
-    #         if models[current_depth].preconditions_met(next_action):
-    #             break
-    #     else:
-    #         # All actions have been checked, so go back to the outer loop
-    #         action_indices[current_depth] = 0  # Reset action index for this depth
-    #         current_depth -= 1
-    #         continue
-    #
-    #     # Apply the valid action found and increase the depth
-    #     models[current_depth + 1] = copy.deepcopy(models[current_depth])
-    #     actions[current_depth] = next_action
-    #     models[current_depth + 1].apply_action(next_action)
-    #     current_depth += 1
-
     #print("Best action:",best_action["name"], "best value:",best_value)
     print("best_action",best_action['name'],"best_value",best_value)
     return best_action, best_value
@@ -215,7 +187,7 @@ def plot_goals(goals_list):
     plt.xlabel('Iteration')
     plt.ylabel('Value')
     plt.legend()
-    plt.savefig('GOAP-goals_changes.jpg')
+    plt.savefig('GOAP-goals_changes.jpg', dpi=300)
 
 
 def plot_stats(stats_list):
@@ -229,7 +201,7 @@ def plot_stats(stats_list):
     plt.xlabel('Iteration')
     plt.ylabel('Value')
     plt.legend()
-    plt.savefig('GOAP-stats_changes.jpg')
+    plt.savefig('GOAP-stats_changes.jpg', dpi=300)
 
 
 def main(iterations):
@@ -250,7 +222,7 @@ def main(iterations):
         goals_list.append(goals_and_actions_json["goals"].copy())
         stats_list.append(goals_and_actions_json["stats"].copy())
         world_model = WorldModel(goals_and_actions_json)
-        chosen_action, chosen_action_discontentment = plan_action(world_model, 1)
+        chosen_action, chosen_action_discontentment = plan_action(world_model, 2)
         if chosen_action:
             #print("Chosen action:\t", chosen_action)
             all_chosen_actions.append(chosen_action["name"])
@@ -269,4 +241,4 @@ def main(iterations):
 
     print("All chosen acitons:\n",all_chosen_actions)
     print("All stats:\n", stats_list)
-    print("All goals:\n", goal_values)
+    # print("All goals:\n", goal_values)

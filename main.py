@@ -9,7 +9,7 @@ if __name__ == '__main__':
 
     if useStatsAndPreconditions.lower() == "n":
         print("\nrunning SimpleGOAP\n", "-"*20, "\n")
-        SimpleGOAP.main(100)
+        SimpleGOAP.main(300)
     else:
         print("\nrunning GOAP\n", "-" * 20, "\n")
-        myGOAP.main(100)
+        myGOAP.main(300)
