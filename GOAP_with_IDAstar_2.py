@@ -157,14 +157,27 @@ class WorldModel:
         if action_discontentment:
             self.setup["stats"]["discontentment"] = action_discontentment
 
+    def hash(self):
+        """Generate a hash value representing the world model."""
+        goal_hash = hash(frozenset(self.setup['goals'].items()))
+        stat_hash = hash(frozenset(self.setup['stats'].items()))
+        return hash((goal_hash, stat_hash))
 
 
-"""
-This function is used to choose the best action to take, given the current state of the world. It uses a form of
-Depth-First Search (DFS) to simulate applying each possible action up to a certain depth (max_depth),
-and it chooses the action sequence that would result in the smallest total discontentment.
-"""
+class Heuristic:
+    def __init__(self, weight=1.0):
+        self.weight = weight
+
+    def estimate(self, world_model):
+        return self.weight * world_model.calculate_current_discontentment()
+
+
 def plan_action(world_model, max_depth):
+    """
+    This function is used to choose the best action to take, given the current state of the world. It uses a form of
+    Depth-First Search (DFS) to simulate applying each possible action up to a certain depth (max_depth),
+    and it chooses the action sequence that would result in the smallest total discontentment.
+    """
 
     """
     These lines initialize arrays to store the world models, actions, and action indices for each level of the DFS.
