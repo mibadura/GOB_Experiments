@@ -10,6 +10,8 @@ import operator
 This is the declaration of the WorldModel class.
 It represents the current state of the world, which includes both stats and goals.
 """
+
+
 class WorldModel:
 
     """
@@ -172,6 +174,67 @@ class Heuristic:
         return self.weight * world_model.calculate_current_discontentment()
 
 
+class TranspositionTable:
+    """
+    The TranspositionTable class serves as a cache mechanism to store world states that have already been evaluated.
+    By storing these states, it avoids re-computation and duplication of efforts, thus speeding up the execution
+    of the IDA* algorithm.
+
+    Each world state is represented by a hash value in the transposition table, which is a one-dimensional array.
+    The hash function is used to compute an index in this array where the state is stored, ensuring efficient retrieval.
+    The size of the transposition table is defined at the time of its creation.
+    """
+    class Entry:
+        """
+        The Entry class represents a single item in the transposition table.
+
+        Each entry consists of:
+        - a 'hash_value', which is a unique identifier of a world state,
+        - and a 'depth' value, which represents the depth in the search tree where this state was first encountered.
+        """
+        def __init__(self):
+            self.hash_value = None
+            self.depth = float('inf')
+
+    def __init__(self, size):
+        """
+        Initialize a new TranspositionTable with a given size. All entries are initially empty.
+        """
+        self.entries = [self.Entry() for _ in range(size)]
+        self.size = size
+
+    def has(self, world_model):
+        """
+        Check if the TranspositionTable already has a specific world model.
+
+        The method calculates the hash value of the world model, then checks the corresponding entry in the table.
+        Returns True if this entry's hash value matches the world model's hash value, False otherwise.
+        """
+        # Check if the TranspositionTable already has this world model
+        entry = self.entries[world_model.hash() % self.size]
+        return entry.hash_value == world_model.hash()
+
+    def add(self, world_model, depth):
+        """
+        Adds a new world model to the TranspositionTable or updates the depth of an existing one.
+
+        First, it checks if the world model is already in the table. If it is, and its new depth is less than
+        the one stored in the table, the depth in the table is updated.
+
+        If the world model is not in the table, or its stored depth is larger than the new depth, the table entry
+        is updated to hold the new world model's hash value and its corresponding depth.
+        """
+        # Add a new world model to the TranspositionTable or update the depth of an existing one
+        entry = self.entries[world_model.hash() % self.size]
+
+        if entry.hash_value == world_model.hash():
+            if depth < entry.depth:
+                entry.depth = depth
+        elif depth < entry.depth:
+            entry.hash_value = world_model.hash()
+            entry.depth = depth
+
+
 def plan_action(world_model, max_depth):
     """
     This function is used to choose the best action to take, given the current state of the world. It uses a form of
@@ -187,6 +250,7 @@ def plan_action(world_model, max_depth):
     models = [None] * (max_depth + 1)
     actions = [None] * max_depth
     action_indices = [0] * (max_depth + 1)
+
 
     """
     The initial world model and depth are set. The depth represents the number of actions in the current sequence.
@@ -255,6 +319,7 @@ def plan_action(world_model, max_depth):
             actions[current_depth] = next_action
             models[current_depth + 1].apply_action(next_action)
             current_depth += 1
+
         else:
             """
             If all actions have been checked and none of them could be applied, it goes back one level in the DFS.
