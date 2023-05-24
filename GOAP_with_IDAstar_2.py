@@ -235,105 +235,227 @@ class TranspositionTable:
             entry.depth = depth
 
 
-def plan_action(world_model, max_depth):
+def do_depth_first(world_model, goal, transposition_table, heuristic, max_depth, cutoff):
     """
-    This function is used to choose the best action to take, given the current state of the world. It uses a form of
-    Depth-First Search (DFS) to simulate applying each possible action up to a certain depth (max_depth),
-    and it chooses the action sequence that would result in the smallest total discontentment.
+    This function performs a depth-limited depth-first search with iterative deepening and returns the smallest cutoff
+    encountered and the corresponding best action.
     """
-
-    """
-    These lines initialize arrays to store the world models, actions, and action indices for each level of the DFS.
-    The world models represent the state of the world after applying each action sequence, and the actions are the
-    actual action sequences. The action indices are used to keep track of which action to try next at each level.
-    """
+    # Initialize storage for world models at each depth, and actions and costs corresponding to them
     models = [None] * (max_depth + 1)
     actions = [None] * max_depth
-    action_indices = [0] * (max_depth + 1)
+    costs = [0.0] * max_depth
 
-
-    """
-    The initial world model and depth are set. The depth represents the number of actions in the current sequence.
-    """
+    # Set up the initial data
     models[0] = world_model
     current_depth = 0
 
-    """
-    The best action and its resulting discontentment are initialized.
-    best_value is initially set to infinity so that any actual discontentment will be smaller.
-    """
-    best_action = None
-    best_value = float('inf')
+    # Keep track of the smallest pruned cutoff
+    smallest_cutoff = float('inf')
 
-    """
-    This is the main loop of the DFS. It continues as long as the current depth is not negative, 
-    which means that there are still action sequences to try.
-    """
+    # Iterate until all actions at depth zero are completed
     while current_depth >= 0:
-        print("\t"*current_depth,"Curr depth", current_depth)
+        # If the goal is fulfilled by the current world model, return the cutoff and the corresponding action
+        if goal.is_fulfilled(models[current_depth]):
+            return cutoff, actions[0]
 
-        """
-        The total discontentment of the current world model is calculated.
-        """
-        current_value = models[current_depth].calculate_current_discontentment()
-        print("\t" * current_depth, "Curr value", current_value)
-
-        """
-        If the maximum depth has been reached, it means that an action sequence of maximum length has been applied.
-        In this case, it checks if the total discontentment is less than the best found so far, and if it is,
-        it updates the best action and value. It then goes back one level in the DFS.
-        """
+        # If we're at maximum depth, move back up the tree
         if current_depth >= max_depth:
-            if current_value < best_value:
-                best_value = current_value
-                best_action = actions[0]
             current_depth -= 1
             continue
 
-        """
-        This loop continues until it finds an action whose preconditions are met, or until it has checked all possible
-        actions at the current level. If an action's preconditions are met, it breaks the loop to apply the action.
-        """
-        all_actions_were_checked = False
-        while not all_actions_were_checked:
-            if action_indices[current_depth] < len(models[current_depth].setup["actions"]):
-                next_action = models[current_depth].setup["actions"][action_indices[current_depth]]
-                print("\t"*current_depth,"Evaluating action:", next_action['name'])
-                action_indices[current_depth] += 1
-                if models[current_depth].preconditions_met(next_action):
-                    all_actions_were_checked = False
-                    break
-                else:
-                    print("\t"*current_depth,next_action["name"], "precons not met")
-                    pass
-            else:
-                all_actions_were_checked = True
+        # Calculate total cost of plan including heuristic estimate
+        cost = heuristic.estimate(models[current_depth]) + costs[current_depth]
 
-        """
-        If it found an action to apply, it creates a deep copy of the current world model,
-        applies the action to the copy, and goes one level deeper in the DFS.
-        """
-        if not all_actions_were_checked:
-            #print("Trying action", next_action["name"]," idx ",action_indices[current_depth]-1)
+        # If the cost exceeds the cutoff, move back up the tree and update smallest cutoff if necessary
+        if cost > cutoff:
+            if cost < smallest_cutoff:
+                smallest_cutoff = cost
+            current_depth -= 1
+            continue
+
+        # Try the next action
+        all_actions_checked, next_action, action_index = models[current_depth].next_action()
+
+        if next_action:
+            # Copy the current model and apply the action to the copy
             models[current_depth + 1] = copy.deepcopy(models[current_depth])
-            actions[current_depth] = next_action
             models[current_depth + 1].apply_action(next_action)
-            current_depth += 1
+
+            # Update action and cost lists
+            actions[current_depth] = next_action
+            costs[current_depth + 1] = costs[current_depth] + cost #assuming the cost here refers to discontentment calculated by the action
+
+            # Process the new state if it hasn't been seen before
+            if not transposition_table.has(models[current_depth + 1]):
+                current_depth += 1
+
+            #TEST
+            if models[current_depth + 1]:
+                # Add the new model to the transposition table
+                transposition_table.add(models[current_depth + 1], current_depth)
 
         else:
-            """
-            If all actions have been checked and none of them could be applied, it goes back one level in the DFS.
-            """
-            action_indices[current_depth] = 0  # Reset action index for this depth
+            # If there are no more actions to try, move back up the tree
             current_depth -= 1
 
+    # If no action is found after searching all states, return the smallest cutoff encountered
+    return smallest_cutoff, None
+
+
+# def plan_action(world_model, max_depth):
+#     """
+#     This function is used to choose the best action to take, given the current state of the world. It uses a form of
+#     Depth-First Search (DFS) to simulate applying each possible action up to a certain depth (max_depth),
+#     and it chooses the action sequence that would result in the smallest total discontentment.
+#     """
+#
+#     """
+#     These lines initialize arrays to store the world models, actions, and action indices for each level of the DFS.
+#     The world models represent the state of the world after applying each action sequence, and the actions are the
+#     actual action sequences. The action indices are used to keep track of which action to try next at each level.
+#     """
+#     models = [None] * (max_depth + 1)
+#     actions = [None] * max_depth
+#     action_indices = [0] * (max_depth + 1)
+#
+#
+#     """
+#     The initial world model and depth are set. The depth represents the number of actions in the current sequence.
+#     """
+#     models[0] = world_model
+#     current_depth = 0
+#
+#     """
+#     The best action and its resulting discontentment are initialized.
+#     best_value is initially set to infinity so that any actual discontentment will be smaller.
+#     """
+#     best_action = None
+#     best_value = float('inf')
+#
+#     """
+#     This is the main loop of the DFS. It continues as long as the current depth is not negative,
+#     which means that there are still action sequences to try.
+#     """
+#     while current_depth >= 0:
+#         print("\t"*current_depth,"Curr depth", current_depth)
+#
+#         """
+#         The total discontentment of the current world model is calculated.
+#         """
+#         current_value = models[current_depth].calculate_current_discontentment()
+#         print("\t" * current_depth, "Curr value", current_value)
+#
+#         """
+#         If the maximum depth has been reached, it means that an action sequence of maximum length has been applied.
+#         In this case, it checks if the total discontentment is less than the best found so far, and if it is,
+#         it updates the best action and value. It then goes back one level in the DFS.
+#         """
+#         if current_depth >= max_depth:
+#             if current_value < best_value:
+#                 best_value = current_value
+#                 best_action = actions[0]
+#             current_depth -= 1
+#             continue
+#
+#         """
+#         This loop continues until it finds an action whose preconditions are met, or until it has checked all possible
+#         actions at the current level. If an action's preconditions are met, it breaks the loop to apply the action.
+#         """
+#         all_actions_were_checked = False
+#         while not all_actions_were_checked:
+#             if action_indices[current_depth] < len(models[current_depth].setup["actions"]):
+#                 next_action = models[current_depth].setup["actions"][action_indices[current_depth]]
+#                 print("\t"*current_depth,"Evaluating action:", next_action['name'])
+#                 action_indices[current_depth] += 1
+#                 if models[current_depth].preconditions_met(next_action):
+#                     all_actions_were_checked = False
+#                     break
+#                 else:
+#                     print("\t"*current_depth,next_action["name"], "precons not met")
+#                     pass
+#             else:
+#                 all_actions_were_checked = True
+#
+#         """
+#         If it found an action to apply, it creates a deep copy of the current world model,
+#         applies the action to the copy, and goes one level deeper in the DFS.
+#         """
+#         if not all_actions_were_checked:
+#             #print("Trying action", next_action["name"]," idx ",action_indices[current_depth]-1)
+#             models[current_depth + 1] = copy.deepcopy(models[current_depth])
+#             actions[current_depth] = next_action
+#             models[current_depth + 1].apply_action(next_action)
+#             current_depth += 1
+#
+#         else:
+#             """
+#             If all actions have been checked and none of them could be applied, it goes back one level in the DFS.
+#             """
+#             action_indices[current_depth] = 0  # Reset action index for this depth
+#             current_depth -= 1
+#
+#     """
+#     After exploring all possible action sequences up to the maximum depth, it returns the first action of
+#     the best sequence and the total discontentment resulting from the best sequence.
+#     """
+#     #print("Best action:",best_action["name"], "best value:",best_value)
+#     print("best_action",best_action['name'],"best_value",best_value)
+#     return best_action, best_value
+
+def plan_action(world_model, goal, heuristic, max_depth):
     """
-    After exploring all possible action sequences up to the maximum depth, it returns the first action of
-    the best sequence and the total discontentment resulting from the best sequence.
+    This function uses Iterative Deepening A* (IDA*) to plan actions.
+    It returns the first best action found that meets the cutoff heuristic.
     """
-    #print("Best action:",best_action["name"], "best value:",best_value)
-    print("best_action",best_action['name'],"best_value",best_value)
-    return best_action, best_value
+
+    # Initial cutoff is the heuristic from the start model
+    cutoff = heuristic.estimate(world_model)
+
+    # Create a TranspositionTable to avoid repeated states
+    transposition_table = TranspositionTable(size=10000)  # Choose an appropriate size here
+
+    # Initialize chosen_action and chosen_action_discontentment
+    chosen_action = None
+    chosen_action_discontentment = None
+
+    while cutoff < float('inf'):
+        # Conduct a depth-limited depth-first search and update cutoff and action
+        cutoff, action = do_depth_first(world_model, goal, transposition_table, heuristic, max_depth, cutoff)
+
+        # If an action has been found, return it
+        if action:
+            chosen_action = action
+            chosen_action_discontentment = world_model.calculate_discontentment(action)
+            break
+
+    return chosen_action, chosen_action_discontentment
+
+
+class Goal:
+    """
+    This class encapsulates the goal of minimizing discontentment in the world model.
+    """
+
+    def __init__(self, discontentment_threshold):
+        """
+        Initializes a new Goal instance.
+
+        Parameters:
+        discontentment_threshold (float): The threshold below which discontentment must fall for the goal to be considered fulfilled.
+        """
+        self.discontentment_threshold = discontentment_threshold
+
+    def is_fulfilled(self, world_model):
+        """
+        Checks whether the goal is fulfilled in the given world model.
+
+        Parameters:
+        world_model (WorldModel): The world model to check.
+
+        Returns:
+        bool: True if the discontentment in the world model is below the threshold, False otherwise.
+        """
+        return world_model.calculate_current_discontentment() <= self.discontentment_threshold
 
 
 def recurring_changes_update(goals_and_actions_json):
@@ -424,7 +546,7 @@ def main(iterations):
         This calls the plan_action function to select the best action to perform based on the current world model.
         The chosen action and its resulting discontentment are returned.
         """
-        chosen_action, chosen_action_discontentment = plan_action(world_model, 1)
+        # chosen_action, chosen_action_discontentment = plan_action(world_model, 1)
 
         """
         This checks if an action was chosen. If no action could be
