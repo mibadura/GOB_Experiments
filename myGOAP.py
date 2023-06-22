@@ -6,9 +6,17 @@ import math
 import copy
 import operator
 
-
+"""
+This is the declaration of the WorldModel class.
+It represents the current state of the world, which includes both stats and goals.
+"""
 class WorldModel:
 
+    """
+    This dictionary maps strings of comparison operators to the actual Python operator functions.
+    This makes it easy to evaluate the preconditions of an action,
+    which are specified as strings in the input JSON file.
+    """
     ops = {
         ">": operator.gt,
         ">=": operator.ge,
@@ -18,10 +26,22 @@ class WorldModel:
         "!=": operator.ne,
     }
 
+    """
+    The __init__ method is the constructor of the WorldModel class.
+    It takes a setup file as input, which is assumed to be a dictionary that contains the initial state of the world
+    and the possible actions. The action_index variable is initialized to 0;
+    this is used to iterate over the actions in the next_action method.
+    """
     def __init__(self, _setup_file):
         self.setup = _setup_file
         self.action_index = 0
 
+    """
+    This method calculates how an action would change a specific goal. It iterates over the goals affected by the
+    action and checks if the goal matches the given goal name.
+    If it does, it calculates the change in the goal's value according to the effect specified by the action.
+    This can either be an absolute value or a percentage of the current goal value.
+    """
     def get_goal_change(self, _goal_name, _goal_value, _action):
         """Changed"""
         action_effect = 0
@@ -35,6 +55,10 @@ class WorldModel:
 
         return action_effect
 
+    """
+    This method calculates the total discontentment in the current world state. It squares the value of each goal
+    and adds them all up. The higher the discontentment, the further the world is from its ideal state.
+    """
     def calculate_current_discontentment(self):
         discontentment = 0.0
         for goal_name, goal_value in self.setup["goals"].items():
@@ -45,8 +69,12 @@ class WorldModel:
             discontentment += pow(goal_value, 2)
         return discontentment
 
+    """
+    This method calculates what the total discontentment would be if a specific action was applied. It works
+    similarly to calculate_current_discontentment,
+    but it first adjusts the goal values according to the effect of the given action.
+    """
     def calculate_discontentment(self, _action):
-        """Changed"""
         discontentment = 0.0
 
         for goal_name, goal_value in self.setup["goals"].items():
@@ -59,6 +87,11 @@ class WorldModel:
 
         return discontentment
 
+    """
+    This method checks if the preconditions of an action are met in the current world state. It iterates over
+    the preconditions of the action, evaluates them using the current stats,
+    and returns False if any precondition is not met.
+    """
     def preconditions_met(self, _action):
         preconditions_met_bool = True
 
@@ -75,6 +108,11 @@ class WorldModel:
 
         return preconditions_met_bool
 
+    """
+    This method retrieves the next action from the list of possible actions, checking if its preconditions are met.
+    If they are, it returns the action; otherwise, it continues to the next action.
+    If all actions have been checked, it indicates this by returning True for all_actions_checked.
+    """
     def next_action(self):
         if self.action_index < len(self.setup["actions"]):
             all_actions_checked = False
@@ -89,6 +127,13 @@ class WorldModel:
             all_actions_checked = True
             return all_actions_checked, None, None
 
+    """
+    This method applies a given action to the world. It adjusts the goal values according to the effect of the action,
+    and it also adjusts the stats if specified by the action.
+    If the total discontentment after applying the action is given, it also updates this in the stats.
+    The effect of the action is not applied directly to the goal values but rather subtracted from them because lower
+    goal values mean less discontentment.
+    """
     def apply_action(self, action, action_discontentment=None):
         for goal_change in action["goalsChange"]:
             goal_name = goal_change["name"]
@@ -113,22 +158,54 @@ class WorldModel:
             self.setup["stats"]["discontentment"] = action_discontentment
 
 
+
+"""
+This function is used to choose the best action to take, given the current state of the world. It uses a form of
+Depth-First Search (DFS) to simulate applying each possible action up to a certain depth (max_depth),
+and it chooses the action sequence that would result in the smallest total discontentment.
+"""
 def plan_action(world_model, max_depth):
+
+    """
+    These lines initialize arrays to store the world models, actions, and action indices for each level of the DFS.
+    The world models represent the state of the world after applying each action sequence, and the actions are the
+    actual action sequences. The action indices are used to keep track of which action to try next at each level.
+    """
     models = [None] * (max_depth + 1)
     actions = [None] * max_depth
     action_indices = [0] * (max_depth + 1)
 
+    """
+    The initial world model and depth are set. The depth represents the number of actions in the current sequence.
+    """
     models[0] = world_model
     current_depth = 0
 
+    """
+    The best action and its resulting discontentment are initialized.
+    best_value is initially set to infinity so that any actual discontentment will be smaller.
+    """
     best_action = None
     best_value = float('inf')
 
+    """
+    This is the main loop of the DFS. It continues as long as the current depth is not negative, 
+    which means that there are still action sequences to try.
+    """
     while current_depth >= 0:
         print("\t"*current_depth,"Curr depth", current_depth)
+
+        """
+        The total discontentment of the current world model is calculated.
+        """
         current_value = models[current_depth].calculate_current_discontentment()
         print("\t" * current_depth, "Curr value", current_value)
 
+        """
+        If the maximum depth has been reached, it means that an action sequence of maximum length has been applied.
+        In this case, it checks if the total discontentment is less than the best found so far, and if it is,
+        it updates the best action and value. It then goes back one level in the DFS.
+        """
         if current_depth >= max_depth:
             if current_value < best_value:
                 best_value = current_value
@@ -136,6 +213,10 @@ def plan_action(world_model, max_depth):
             current_depth -= 1
             continue
 
+        """
+        This loop continues until it finds an action whose preconditions are met, or until it has checked all possible
+        actions at the current level. If an action's preconditions are met, it breaks the loop to apply the action.
+        """
         all_actions_were_checked = False
         while not all_actions_were_checked:
             if action_indices[current_depth] < len(models[current_depth].setup["actions"]):
@@ -151,7 +232,10 @@ def plan_action(world_model, max_depth):
             else:
                 all_actions_were_checked = True
 
-
+        """
+        If it found an action to apply, it creates a deep copy of the current world model,
+        applies the action to the copy, and goes one level deeper in the DFS.
+        """
         if not all_actions_were_checked:
             #print("Trying action", next_action["name"]," idx ",action_indices[current_depth]-1)
             models[current_depth + 1] = copy.deepcopy(models[current_depth])
@@ -159,9 +243,16 @@ def plan_action(world_model, max_depth):
             models[current_depth + 1].apply_action(next_action)
             current_depth += 1
         else:
+            """
+            If all actions have been checked and none of them could be applied, it goes back one level in the DFS.
+            """
             action_indices[current_depth] = 0  # Reset action index for this depth
             current_depth -= 1
 
+    """
+    After exploring all possible action sequences up to the maximum depth, it returns the first action of
+    the best sequence and the total discontentment resulting from the best sequence.
+    """
     #print("Best action:",best_action["name"], "best value:",best_value)
     print("best_action",best_action['name'],"best_value",best_value)
     return best_action, best_value
@@ -205,37 +296,89 @@ def plot_stats(stats_list):
 
 
 def main(iterations):
+    """
+
+    :param iterations:
+    :return:
+    """
+
+    """
+    This opens a JSON file which contains the initial setup of the world, including the initial state of goals
+    and actions. The file is read and its contents are parsed into a Python dictionary.
+    """
     with open("setup_with_percentages.json", "r") as file:
         goals_and_actions_json = json.load(file)
 
     #print("Starting goals are", goals_and_actions_json["goals"])
 
+    """
+    These are lists to store the history of chosen actions, stats, and goals over all iterations.
+    This is done so that the progression of the world model can be tracked and later analyzed or visualized.
+    """
     all_chosen_actions = []
     stats_list = []
     goals_list = []
     goal_values = []
 
+    """
+    This is the main loop of the function, which repeats the process of action planning and execution
+    for a given number of iterations.
+    """
     for i in range(iterations):
         #print("\nRound", i)
         #print("Goals:", goals_and_actions_json["goals"])
         print(f"Loading... {(100/iterations)*i}%")
+
+        """
+        These lines append the current state of the goals and stats to the respective lists.
+        They are copied so that the lists will contain the state at each iteration,
+        not just references to the final state.
+        """
         goals_list.append(goals_and_actions_json["goals"].copy())
         stats_list.append(goals_and_actions_json["stats"].copy())
+
+        """
+        This creates a new instance of the WorldModel class, initializing it with the current state of the world.
+        """
         world_model = WorldModel(goals_and_actions_json)
-        chosen_action, chosen_action_discontentment = plan_action(world_model, 2)
+
+        """
+        This calls the plan_action function to select the best action to perform based on the current world model.
+        The chosen action and its resulting discontentment are returned.
+        """
+        chosen_action, chosen_action_discontentment = plan_action(world_model, 1)
+
+        """
+        This checks if an action was chosen. If no action could be
+        chosen (which would mean that no action's preconditions were met), the program terminates.
+        """
         if chosen_action:
             #print("Chosen action:\t", chosen_action)
             all_chosen_actions.append(chosen_action["name"])
+
+            """
+            These lines update the state of the world according to recurring changes and the chosen action.
+            The recurring_changes_update function applies changes that happen every iteration,
+            and apply_action applies the changes resulting from the chosen action.
+            """
             recurring_changes_update(goals_and_actions_json)
             world_model.apply_action(chosen_action, chosen_action_discontentment)
+
+            """
+            These lines update the state of the world for the next iteration, based on the new state of the world model.
+            """
             goal_values.append(list(goals_and_actions_json["goals"].values()))
             goals_and_actions_json["goals"] = world_model.setup["goals"]
             goals_and_actions_json["stats"] = world_model.setup["stats"]
             #print("Goals are now:\t", goals_and_actions_json["goals"])
         else:
-            #print("No action can be chosen. Closing the game.")
+            print("No action can be chosen. Closing the game.")
             sys.exit()
 
+    """
+    After all iterations have been completed, these lines create and save plots of the goal values and stats over time,
+    using the lists that were compiled during the iterations.
+    """
     plot_goals(goals_list)
     plot_stats(stats_list)
 
