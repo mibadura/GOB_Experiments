@@ -123,7 +123,7 @@ class WorldModel:
             if self.preconditions_met(action):
                 return all_actions_checked, action, self.action_index
             else:
-                #print(action["name"], "precons not met")
+                print(action["name"], "precons not met")
                 return all_actions_checked, None, None
         else:
             all_actions_checked = True
@@ -137,6 +137,7 @@ class WorldModel:
     goal values mean less discontentment.
     """
     def apply_action(self, action, action_discontentment=None):
+        print("Applying action",action["name"])
         for goal_change in action["goalsChange"]:
             goal_name = goal_change["name"]
             if goal_name in self.setup["goals"]:
@@ -172,6 +173,7 @@ class Heuristic:
 
     def estimate(self, world_model):
         return self.weight * world_model.calculate_current_discontentment()
+        # return 0
 
 
 class TranspositionTable:
@@ -241,9 +243,9 @@ def do_depth_first(world_model, goal, transposition_table, heuristic, max_depth,
     encountered and the corresponding best action.
     """
     # Initialize storage for world models at each depth, and actions and costs corresponding to them
-    models = [None] * (max_depth + 1)
+    models = [None] * (max_depth + 2)
     actions = [None] * max_depth
-    costs = [0.0] * max_depth
+    costs = [0.0] * (max_depth + 1)
 
     # Set up the initial data
     models[0] = world_model
@@ -254,8 +256,12 @@ def do_depth_first(world_model, goal, transposition_table, heuristic, max_depth,
 
     # Iterate until all actions at depth zero are completed
     while current_depth >= 0:
+        print("-"*current_depth, "currrent depth",current_depth)
         # If the goal is fulfilled by the current world model, return the cutoff and the corresponding action
-        if goal.is_fulfilled(models[current_depth]):
+        if goal.is_fulfilled(models[current_depth]) and actions[0] is None:
+            print("-"*current_depth, "Goal is fulfilled by the current model but no action chosen yet")
+        elif goal.is_fulfilled(models[current_depth]) and actions[0]:
+            print("-"*current_depth, "Goal is fulfilled by the current model and action is",actions[0]["name"])
             return cutoff, actions[0]
 
         # If we're at maximum depth, move back up the tree
@@ -265,16 +271,24 @@ def do_depth_first(world_model, goal, transposition_table, heuristic, max_depth,
 
         # Calculate total cost of plan including heuristic estimate
         cost = heuristic.estimate(models[current_depth]) + costs[current_depth]
+        print("-"*current_depth, "cost:",cost)
+        print("-"*current_depth, "cutoff:", cutoff)
 
         # If the cost exceeds the cutoff, move back up the tree and update smallest cutoff if necessary
         if cost > cutoff:
             if cost < smallest_cutoff:
                 smallest_cutoff = cost
             current_depth -= 1
+            print("-"*current_depth, "Decreasing depth")
             continue
 
         # Try the next action
-        all_actions_checked, next_action, action_index = models[current_depth].next_action()
+        all_actions_checked = False
+        next_action = None
+        while not all_actions_checked and not next_action:
+            print("-"*current_depth, "Looking for next action...")
+            all_actions_checked, next_action, action_index = models[current_depth].next_action()
+            print("-"*current_depth, "all_actions_checked, next_action, action_index",all_actions_checked, next_action, action_index)
 
         if next_action:
             # Copy the current model and apply the action to the copy
@@ -283,124 +297,26 @@ def do_depth_first(world_model, goal, transposition_table, heuristic, max_depth,
 
             # Update action and cost lists
             actions[current_depth] = next_action
-            costs[current_depth + 1] = costs[current_depth] + cost #assuming the cost here refers to discontentment calculated by the action
+            # costs[current_depth + 1] = costs[current_depth] + world_model.calculate_discontentment(next_action)#cost #assuming the cost here refers to discontentment calculated by the action
+            costs[current_depth + 1] = current_depth + 1
 
             # Process the new state if it hasn't been seen before
             if not transposition_table.has(models[current_depth + 1]):
                 current_depth += 1
 
-            #TEST
-            if models[current_depth + 1]:
-                # Add the new model to the transposition table
-                transposition_table.add(models[current_depth + 1], current_depth)
+            # #TEST
+            # if models[current_depth + 1]:
+            #     # Add the new model to the transposition table
+            #     transposition_table.add(models[current_depth + 1], current_depth)
 
         else:
             # If there are no more actions to try, move back up the tree
+            print("-"*current_depth, "Decreasing depth - no more actions to try")
             current_depth -= 1
 
     # If no action is found after searching all states, return the smallest cutoff encountered
     return smallest_cutoff, None
 
-
-# def plan_action(world_model, max_depth):
-#     """
-#     This function is used to choose the best action to take, given the current state of the world. It uses a form of
-#     Depth-First Search (DFS) to simulate applying each possible action up to a certain depth (max_depth),
-#     and it chooses the action sequence that would result in the smallest total discontentment.
-#     """
-#
-#     """
-#     These lines initialize arrays to store the world models, actions, and action indices for each level of the DFS.
-#     The world models represent the state of the world after applying each action sequence, and the actions are the
-#     actual action sequences. The action indices are used to keep track of which action to try next at each level.
-#     """
-#     models = [None] * (max_depth + 1)
-#     actions = [None] * max_depth
-#     action_indices = [0] * (max_depth + 1)
-#
-#
-#     """
-#     The initial world model and depth are set. The depth represents the number of actions in the current sequence.
-#     """
-#     models[0] = world_model
-#     current_depth = 0
-#
-#     """
-#     The best action and its resulting discontentment are initialized.
-#     best_value is initially set to infinity so that any actual discontentment will be smaller.
-#     """
-#     best_action = None
-#     best_value = float('inf')
-#
-#     """
-#     This is the main loop of the DFS. It continues as long as the current depth is not negative,
-#     which means that there are still action sequences to try.
-#     """
-#     while current_depth >= 0:
-#         print("\t"*current_depth,"Curr depth", current_depth)
-#
-#         """
-#         The total discontentment of the current world model is calculated.
-#         """
-#         current_value = models[current_depth].calculate_current_discontentment()
-#         print("\t" * current_depth, "Curr value", current_value)
-#
-#         """
-#         If the maximum depth has been reached, it means that an action sequence of maximum length has been applied.
-#         In this case, it checks if the total discontentment is less than the best found so far, and if it is,
-#         it updates the best action and value. It then goes back one level in the DFS.
-#         """
-#         if current_depth >= max_depth:
-#             if current_value < best_value:
-#                 best_value = current_value
-#                 best_action = actions[0]
-#             current_depth -= 1
-#             continue
-#
-#         """
-#         This loop continues until it finds an action whose preconditions are met, or until it has checked all possible
-#         actions at the current level. If an action's preconditions are met, it breaks the loop to apply the action.
-#         """
-#         all_actions_were_checked = False
-#         while not all_actions_were_checked:
-#             if action_indices[current_depth] < len(models[current_depth].setup["actions"]):
-#                 next_action = models[current_depth].setup["actions"][action_indices[current_depth]]
-#                 print("\t"*current_depth,"Evaluating action:", next_action['name'])
-#                 action_indices[current_depth] += 1
-#                 if models[current_depth].preconditions_met(next_action):
-#                     all_actions_were_checked = False
-#                     break
-#                 else:
-#                     print("\t"*current_depth,next_action["name"], "precons not met")
-#                     pass
-#             else:
-#                 all_actions_were_checked = True
-#
-#         """
-#         If it found an action to apply, it creates a deep copy of the current world model,
-#         applies the action to the copy, and goes one level deeper in the DFS.
-#         """
-#         if not all_actions_were_checked:
-#             #print("Trying action", next_action["name"]," idx ",action_indices[current_depth]-1)
-#             models[current_depth + 1] = copy.deepcopy(models[current_depth])
-#             actions[current_depth] = next_action
-#             models[current_depth + 1].apply_action(next_action)
-#             current_depth += 1
-#
-#         else:
-#             """
-#             If all actions have been checked and none of them could be applied, it goes back one level in the DFS.
-#             """
-#             action_indices[current_depth] = 0  # Reset action index for this depth
-#             current_depth -= 1
-#
-#     """
-#     After exploring all possible action sequences up to the maximum depth, it returns the first action of
-#     the best sequence and the total discontentment resulting from the best sequence.
-#     """
-#     #print("Best action:",best_action["name"], "best value:",best_value)
-#     print("best_action",best_action['name'],"best_value",best_value)
-#     return best_action, best_value
 
 def plan_action(world_model, goal, heuristic, max_depth):
     """
@@ -408,20 +324,24 @@ def plan_action(world_model, goal, heuristic, max_depth):
     It returns the first best action found that meets the cutoff heuristic.
     """
 
+    print("Inside plan_action() function...")  # Debug print
+
     # Initial cutoff is the heuristic from the start model
     cutoff = heuristic.estimate(world_model)
 
     # Create a TranspositionTable to avoid repeated states
-    transposition_table = TranspositionTable(size=10000)  # Choose an appropriate size here
+    transposition_table = TranspositionTable(size=30)  # Choose an appropriate size here
 
     # Initialize chosen_action and chosen_action_discontentment
     chosen_action = None
     chosen_action_discontentment = None
 
     while cutoff < float('inf'):
+        # print("Inside while loop in plan_action()...")  # Debug print
         # Conduct a depth-limited depth-first search and update cutoff and action
+        print("Running do_depth_first")
         cutoff, action = do_depth_first(world_model, goal, transposition_table, heuristic, max_depth, cutoff)
-
+        print("Chosen cutoff and action are", cutoff, action)
         # If an action has been found, return it
         if action:
             chosen_action = action
@@ -478,7 +398,7 @@ def plot_goals(goals_list):
     plt.xlabel('Iteration')
     plt.ylabel('Value')
     plt.legend()
-    plt.savefig('GOAP-goals_changes.jpg', dpi=300)
+    plt.savefig('GOAP-IDAstar2-goals_changes.jpg', dpi=300)
 
 
 def plot_stats(stats_list):
@@ -492,96 +412,59 @@ def plot_stats(stats_list):
     plt.xlabel('Iteration')
     plt.ylabel('Value')
     plt.legend()
-    plt.savefig('GOAP-stats_changes.jpg', dpi=300)
+    plt.savefig('GOAP-IDAstar2-stats_changes.jpg', dpi=300)
 
 
-def main(iterations):
-    """
+def main(iterations, filename="setup_with_percentages.json"):
 
-    :param iterations:
-    :return:
-    """
+    # Load setup file
+    with open(filename, "r") as file:
+        setup = json.load(file)
 
-    """
-    This opens a JSON file which contains the initial setup of the world, including the initial state of goals
-    and actions. The file is read and its contents are parsed into a Python dictionary.
-    """
-    with open("setup_with_percentages.json", "r") as file:
-        goals_and_actions_json = json.load(file)
+    # Create a world model from the setup
+    world_model = WorldModel(setup)
 
-    #print("Starting goals are", goals_and_actions_json["goals"])
+    # Create a heuristic with a weight of 1.0
+    heuristic = Heuristic(weight=1.0)
 
-    """
-    These are lists to store the history of chosen actions, stats, and goals over all iterations.
-    This is done so that the progression of the world model can be tracked and later analyzed or visualized.
-    """
+    # Maximum depth to search
+    max_depth = 100
+
+    # Lists to keep track of the state at each iteration
     all_chosen_actions = []
     stats_list = []
     goals_list = []
-    goal_values = []
 
-    """
-    This is the main loop of the function, which repeats the process of action planning and execution
-    for a given number of iterations.
-    """
+    # Run the iterations
     for i in range(iterations):
-        #print("\nRound", i)
-        #print("Goals:", goals_and_actions_json["goals"])
-        print(f"Loading... {(100/iterations)*i}%")
+        print(f"Iteration {i+1} of {iterations}...")
 
-        """
-        These lines append the current state of the goals and stats to the respective lists.
-        They are copied so that the lists will contain the state at each iteration,
-        not just references to the final state.
-        """
-        goals_list.append(goals_and_actions_json["goals"].copy())
-        stats_list.append(goals_and_actions_json["stats"].copy())
+        # Add the current state to the lists
+        stats_list.append(copy.deepcopy(world_model.setup["stats"]))
+        goals_list.append(copy.deepcopy(world_model.setup["goals"]))
 
-        """
-        This creates a new instance of the WorldModel class, initializing it with the current state of the world.
-        """
-        world_model = WorldModel(goals_and_actions_json)
+        # Plan the next action using Iterative Deepening A* (IDA*)
+        current_discontentment = world_model.calculate_current_discontentment()
+        # Create a goal with a threshold discontentment value
+        goal = Goal(discontentment_threshold=current_discontentment-1)
 
-        """
-        This calls the plan_action function to select the best action to perform based on the current world model.
-        The chosen action and its resulting discontentment are returned.
-        """
-        # chosen_action, chosen_action_discontentment = plan_action(world_model, 1)
+        chosen_action, chosen_action_discontentment = plan_action(world_model, goal, heuristic, max_depth)
 
-        """
-        This checks if an action was chosen. If no action could be
-        chosen (which would mean that no action's preconditions were met), the program terminates.
-        """
+        # If an action was chosen, apply it
         if chosen_action:
-            #print("Chosen action:\t", chosen_action)
-            all_chosen_actions.append(chosen_action["name"])
-
-            """
-            These lines update the state of the world according to recurring changes and the chosen action.
-            The recurring_changes_update function applies changes that happen every iteration,
-            and apply_action applies the changes resulting from the chosen action.
-            """
-            recurring_changes_update(goals_and_actions_json)
+            print(f"Chosen action: {chosen_action['name']}")
+            all_chosen_actions.append(chosen_action['name'])
             world_model.apply_action(chosen_action, chosen_action_discontentment)
-
-            """
-            These lines update the state of the world for the next iteration, based on the new state of the world model.
-            """
-            goal_values.append(list(goals_and_actions_json["goals"].values()))
-            goals_and_actions_json["goals"] = world_model.setup["goals"]
-            goals_and_actions_json["stats"] = world_model.setup["stats"]
-            #print("Goals are now:\t", goals_and_actions_json["goals"])
         else:
-            print("No action can be chosen. Closing the game.")
-            sys.exit()
+            print("No action can be chosen. Stopping.")
+            break
 
-    """
-    After all iterations have been completed, these lines create and save plots of the goal values and stats over time,
-    using the lists that were compiled during the iterations.
-    """
+        # # Update the recurring changes
+        # recurring_changes_update(world_model.setup)
+
+    # Plot the changes in goals and stats over time
     plot_goals(goals_list)
     plot_stats(stats_list)
 
-    print("All chosen acitons:\n",all_chosen_actions)
+    print("All chosen actions:\n", all_chosen_actions)
     print("All stats:\n", stats_list)
-    # print("All goals:\n", goal_values)

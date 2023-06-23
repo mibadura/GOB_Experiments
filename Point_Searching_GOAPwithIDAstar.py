@@ -101,8 +101,8 @@ class Obstacles:
     def __init__(self):
         self.obstacle_polygons = [
             Polygon([(-5, 3), (-5, 8), (-3, 8), (-3, 6), (-1, 6), (-1, 4), (-3, 4), (-3, 3)]),
-            Polygon([(-3, 1), (-3, 4), (-1, 4),(-1, 3), (2, 3), (2, 1)]),
-            Polygon([(3, 8), (3, 10), (-7, 10), (-7, 8)])
+            Polygon([(-3, 1), (-3, 4), (-1, 4), (-1, 3), (2, 3), (2, 1)]),
+            Polygon([(-1, 8), (-1, 11), (-10, 11), (-10, 8)])
         ]
 
     def is_point_on_polygon(self, point, polygon):
@@ -174,26 +174,25 @@ def do_depth_first(world_model, goal, heuristic, transposition_table, max_depth,
 
     # Iterate until all actions at depth zero are completed
     while current_depth >= 0:
-        # If the goal is fulfilled by the current state, return the cutoff and the corresponding action
-        if goal.is_fulfilled(states[current_depth]):
-            print('-'*10,f' Goal {states[current_depth]} is fulfilled ','-'*10)
-            return cutoff, actions
-
 
         # Calculate total cost of plan including heuristic estimate
         cost = costs[current_depth] + heuristic.estimate(states[current_depth])
-        print('do_depth_first:',f'\tDepth: {current_depth};\tstate {states[current_depth]};\tcost {cost};\tcutoff: {cutoff}')
+        print('do_depth_first:', f'\tDepth: {current_depth};\tstate {states[current_depth]};\tcost {cost};\tcutoff: {cutoff}')
 
         if obstacles.is_point_in_polygon((states[current_depth].x, states[current_depth].y)):
             print(f'do_depth_first: in polygon! {(states[current_depth].x, states[current_depth].y)}')
             current_depth -= 1
             continue
 
+        # If the goal is fulfilled by the current state, return the cutoff and the corresponding action
+        if goal.is_fulfilled(states[current_depth]):
+            print('-'*10,f' Goal {states[current_depth]} is fulfilled ','-'*10)
+            return cutoff, actions
+
         if current_depth >= max_depth - 1:
             print(f'do_depth_first: current_depth ({current_depth}) >= max_depth-1 and goal not reached. Decreasing depth')
             current_depth -= 1
             continue
-
 
         # If the cost exceeds the cutoff, move back up the tree and update smallest cutoff if necessary
         if cost > cutoff:
@@ -249,7 +248,7 @@ def main():
 
     # Initial state
     start = WorldState(0, 0, actions)
-    goal = Goal(-2, 7)
+    goal = Goal(-5, 11)
 
     # Heuristic function
     heuristic = Heuristic(goal)
@@ -260,7 +259,7 @@ def main():
     obstacles = Obstacles()
 
     # Plan action
-    plan = plan_action(start, goal, heuristic, transposition_table, obstacles = obstacles, max_depth=20)
+    plan = plan_action(start, goal, heuristic, transposition_table, obstacles = obstacles, max_depth=25)
 
     # If a plan was found, print it
     if plan:
