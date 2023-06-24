@@ -1,7 +1,7 @@
 import matplotlib.pyplot as plt
-from matplotlib.path import Path
 import sys
 from shapely.geometry import Point, Polygon, LineString
+import time
 
 
 class WorldState:
@@ -13,9 +13,6 @@ class WorldState:
         self.action_index = 0
 
     def copy(self):
-        """
-        Return a copy of the current state.
-        """
         return WorldState(self.x, self.y, self.actions)
 
     def apply_action(self, action):
@@ -27,7 +24,6 @@ class WorldState:
             next_action = self.actions[self.action_index]
             self.action_index += 1
             return next_action, self.action_index-1
-
         else:
             return None, None
 
@@ -36,6 +32,11 @@ class WorldState:
 
     def __str__(self):
         return f"({self.x}, {self.y})"
+
+    def __eq__(self, other):
+        if isinstance(other, WorldState):
+            return self.x == other.x and self.y == other.y and self.action_index == other.action_index
+        return False
 
 
 class Goal:
@@ -52,14 +53,12 @@ class Action:
         self.dx = dx
         self.dy = dy
 
-    def get_cost(self):
+    @staticmethod
+    def get_cost():
         return 1
 
     @staticmethod
     def get_all_actions():
-        """
-        Return a list of all possible actions.
-        """
         return [
             Action(-1, 0),  # Move left
             Action(1, 0),   # Move right
@@ -80,20 +79,12 @@ class TranspositionTable:
     def __init__(self):
         self.visited = {}
 
-    def has(self, state):
-        """
-        Check if the state is already in the transposition table.
-        state: an instance of State.
-        """
-        return state in self.visited
+    def has(self, state, depth):
+        return state in self.visited and self.visited[state] <= depth
 
     def add(self, state, depth):
-        """
-        Add a state to the transposition table or update its depth if it's already in the table.
-        state: an instance of State.
-        depth: depth of the state.
-        """
         if state not in self.visited or depth < self.visited[state]:
+            print(f'\t\ttranspo:\tadding state {state} at depth: {depth}')
             self.visited[state] = depth
 
 
@@ -102,10 +93,11 @@ class Obstacles:
         self.obstacle_polygons = [
             Polygon([(-5, 3), (-5, 8), (-3, 8), (-3, 6), (-1, 6), (-1, 4), (-3, 4), (-3, 3)]),
             Polygon([(-3, 1), (-3, 4), (-1, 4), (-1, 3), (2, 3), (2, 1)]),
-            Polygon([(-1, 8), (-1, 11), (-10, 11), (-10, 8)])
+            Polygon([(-1, 8), (-1, 11), (-11, 11), (-11, 8)])
         ]
 
-    def is_point_on_polygon(self, point, polygon):
+    @staticmethod
+    def is_point_on_polygon(point, polygon):
         point = Point(point)
         for line in zip(list(polygon.exterior.coords)[:-1], list(polygon.exterior.coords)[1:]):
             if Point(line[0]).distance(point) + Point(line[1]).distance(point) == LineString(line).length:
@@ -113,36 +105,19 @@ class Obstacles:
         return False
 
     def is_point_in_polygon(self, point):
-        """
-        Check if a point is inside a polygon.
-
-        Args:
-        point (tuple): (x, y) pair representing the point.
-
-        Returns:
-        bool: True if the point is in the polygon and not on its boundary, False otherwise.
-        """
         return any(polygon.contains(Point(point)) and not self.is_point_on_polygon(point, polygon) for polygon in self.obstacle_polygons)
 
     def get_obstacle_polygons(self):
         return self.obstacle_polygons
 
 
-def plan_action(world_model, goal, heuristic, transposition_table, max_depth,  obstacles = None):
-    """
-    This function uses Iterative Deepening A* (IDA*) to plan actions.
-    It returns the first best action found that meets the cutoff heuristic.
-    """
-
-    # Initial cutoff is the heuristic from the start model
+def plan_action(world_model, goal, heuristic, max_depth,  obstacles = None):
     cutoff = heuristic.estimate(world_model)
 
     while cutoff != float('inf'):
-        # Conduct a depth-limited depth-first search and update cutoff and action
-        print(f'\n\n---PLAN ACTION--')
-        print(f'Current cutoff: {cutoff}')
+        transposition_table = TranspositionTable()
+        print('\n', '-'*20, f'plan_action: new plan action - cutoff: {cutoff}', '-'*20, '\n')
         cutoff, actions = do_depth_first(world_model, goal, heuristic, transposition_table, max_depth, cutoff, obstacles=obstacles)
-        # If an action has been found, return it
         if actions:
             print("plan_action: action plan returned")
             return actions
@@ -150,124 +125,89 @@ def plan_action(world_model, goal, heuristic, transposition_table, max_depth,  o
 
 
 def do_depth_first(world_model, goal, heuristic, transposition_table, max_depth, cutoff, obstacles = None ):
-    print(f'\ndo_depth_first: New do_depth_first')
+    print(f'\n\tdo_depth_first: new do_depth_first')
     max_depth += 1
 
-    # if obstacles:
-    #     print(obstacles.get_obstacle_polygons())
-    """
-    This function performs a depth-limited depth-first search with iterative deepening and returns the smallest cutoff
-    encountered and the corresponding best action.
-    """
-    # Initialize storage for states at each depth, and actions and costs corresponding to them
     states = [None] * (max_depth + 1)
     actions = [None] * max_depth
     costs = [0.0] * max_depth
 
-    # Set up the initial data
     world_model.action_index = 0
     states[0] = world_model
     current_depth = 0
 
-    # Keep track of the smallest pruned cutoff
     smallest_cutoff = float('inf')
 
-    # Iterate until all actions at depth zero are completed
     while current_depth >= 0:
 
-        # Calculate total cost of plan including heuristic estimate
         cost = costs[current_depth] + heuristic.estimate(states[current_depth])
-        print('do_depth_first:', f'\tDepth: {current_depth};\tstate {states[current_depth]};\tcost {cost};\tcutoff: {cutoff}')
+        print(f'\tdo_depth_first:\tdepth: {current_depth};\tstate {states[current_depth]};\tcost {cost};\tcutoff: {cutoff}')
 
         if obstacles.is_point_in_polygon((states[current_depth].x, states[current_depth].y)):
-            print(f'do_depth_first: in polygon! {(states[current_depth].x, states[current_depth].y)}')
+            print(f'\tdo_depth_first: in polygon! {(states[current_depth].x, states[current_depth].y)}')
             current_depth -= 1
             continue
 
-        # If the goal is fulfilled by the current state, return the cutoff and the corresponding action
         if goal.is_fulfilled(states[current_depth]):
-            print('-'*10,f' Goal {states[current_depth]} is fulfilled ','-'*10)
+            print('\n','-'*10,f' Goal {states[current_depth]} is fulfilled ','-'*10)
             return cutoff, actions
 
         if current_depth >= max_depth - 1:
-            print(f'do_depth_first: current_depth ({current_depth}) >= max_depth-1 and goal not reached. Decreasing depth')
+            print(f'\tdo_depth_first: current_depth ({current_depth}) too deep and goal not reached. Decreasing depth')
             current_depth -= 1
             continue
 
-        # If the cost exceeds the cutoff, move back up the tree and update smallest cutoff if necessary
         if cost > cutoff:
             if cost < smallest_cutoff:
                 smallest_cutoff = cost
-                # print('-'*current_depth,f'Smallest cutoff updated to {smallest_cutoff}')
             current_depth -= 1
-            # print('-'*(current_depth+1),f'Cost {cost} bigger than cutoff {cutoff}. Decreasing depth to {current_depth}')
             continue
 
-        # Try the next action
         next_action, next_action_idx = states[current_depth].next_action()
         if next_action:
-            # print('-'*current_depth,f'Next action on depth {current_depth}')
-            # Copy the current state and apply the action to the copy
             states[current_depth + 1] = states[current_depth].copy()
-            # print('-'*current_depth,f"State[{current_depth + 1}.{next_action_idx}] ", states[current_depth + 1])
             states[current_depth + 1].apply_action(next_action)
-            # print('-'*current_depth,f"State[{current_depth + 1}.{next_action_idx}] after action ", states[current_depth + 1])
 
-            # Update action and cost lists
             actions[current_depth] = next_action
             costs[current_depth + 1] = costs[current_depth] + next_action.get_cost()
 
-            # Process the new state if it hasn't been seen before
-            if not transposition_table.has(states[current_depth + 1]):
+            if not transposition_table.has(states[current_depth + 1], current_depth + 1):
+                print(f'\n\tdo_depth_first: simulating move {states[current_depth]} -> {states[current_depth + 1]} | new move! adding to transpo table ')
                 current_depth += 1
+                transposition_table.add(states[current_depth], current_depth)
             else:
-                print(f'do_depth_first: state {states[current_depth + 1]} alredy in transpo table')
-
-            # Add the new state to the transposition table
-            transposition_table.add(states[current_depth + 1], current_depth)
+                print(f'\n\tdo_depth_first: simulating move {states[current_depth]} -> {states[current_depth + 1]} | already in transpo. trying next move ')
 
         else:
-            # If there are no more actions to try, move back up the tree
             current_depth -= 1
-            print(f'do_depth_first: no more actions: depth decreased')
-            # print('-'*current_depth,f'No more actions, decreasing depth to {current_depth}')
+            print(f'\tdo_depth_first: no more actions: depth decreased')
 
-    # If no action is found after searching all states, return the smallest cutoff encountered
     return smallest_cutoff, []
 
 
 def main():
-
-    #FOR SAVING OUTPUT TO TEXT FILE
     orig_stdout = sys.stdout
     f = open('out.txt', 'w')
     sys.stdout = f
 
-    # Create actions
     actions = Action.get_all_actions()
 
-    # Initial state
-    start = WorldState(0, 0, actions)
-    goal = Goal(-5, 11)
+    start = WorldState(-9, 0, actions)
+    goal = Goal(-2, 11)
 
-    # Heuristic function
     heuristic = Heuristic(goal)
-
-    # Create transposition table
-    transposition_table = TranspositionTable()
-
     obstacles = Obstacles()
 
-    # Plan action
-    plan = plan_action(start, goal, heuristic, transposition_table, obstacles = obstacles, max_depth=25)
+    start_time = time.time()
+    plan = plan_action(start, goal, heuristic, obstacles = obstacles, max_depth=30)
+    end_time = time.time()
+    print(f'The script execution took {end_time - start_time} seconds.')
 
-    # If a plan was found, print it
     if plan:
         print("Plan found.")
     else:
         print("No plan found.")
 
-    # Gather positions for plotting
     x_positions = [start.x]
     y_positions = [start.y]
     current_state = start
@@ -284,29 +224,24 @@ def main():
             x_positions.append(current_state.x)
             y_positions.append(current_state.y)
 
-        # Add goal position
         x_positions.append(goal.x)
         y_positions.append(goal.y)
 
         print(f'Plan length: {len(x_positions)-2}')
+        plt.figure(dpi=200)
 
-        plt.figure(dpi=200)  # Set dpi to 300
-
-        # Create obstacle polygons
         polygons = obstacles.get_obstacle_polygons()
         for polygon in polygons:
-            # Obtain x and y coordinates
             x, y = polygon.exterior.xy
             plt.fill(x, y, alpha=0.5, label='Obstacle')  # fill with colors
 
-        # Create plot
         plt.plot(x_positions, y_positions, '-', linewidth=2, label='Path')
         plt.scatter([start.x], [start.y], color='g', label='Start')
         plt.scatter([goal.x], [goal.y], color='r', label='Goal')
         plt.grid(True)
         plt.axis('equal')
-        plt.xticks(range(-10, 10))
-        plt.yticks(range(-1, 15))
+        plt.xticks(range(-15, 10))
+        plt.yticks(range(-3, 15))
         plt.legend()
         plt.show()
 
