@@ -215,7 +215,7 @@ def do_depth_first(world_model, goal, heuristic, transposition_table, max_depth,
     return smallest_cutoff, best_path, False
 
 
-def main(_max_depth):
+def main(_max_depth, should_goal_move=False):
     main_start_time = time.time()
     orig_stdout = sys.stdout
     f = open('out.txt', 'w')
@@ -224,15 +224,14 @@ def main(_max_depth):
     actions = Action.get_all_actions()
 
     start = WorldState(0, 0, actions)
-    goal = Goal(-5, 10)
-    max_plan_loops = 10
+    goal_x_points = [-5]
+    goal_y_points = [10]
+    max_plan_loops = 20
 
-    heuristic = Heuristic(goal)
     obstacles = Obstacles()
 
     goal_reached = False
     plan_loop_idx = 0
-    full_plan = []
 
     x_positions = [start.x]
     y_positions = [start.y]
@@ -241,6 +240,9 @@ def main(_max_depth):
     current_state = start
 
     while not goal_reached and plan_loop_idx < max_plan_loops:
+
+        goal = Goal(goal_x_points[-1], goal_y_points[-1])
+        heuristic = Heuristic(goal)
 
         start_time = time.time()
         single_plan, goal_reached = plan_action(start, goal, heuristic, obstacles=obstacles, max_depth=_max_depth)
@@ -251,6 +253,7 @@ def main(_max_depth):
             print("Partial plan found.")
         elif single_plan and goal_reached:
             print("Final plan found.")
+            should_goal_move = False
         else:
             print('No plan at all.')
             break
@@ -268,6 +271,12 @@ def main(_max_depth):
         starting_points_x.append(start.x)
         starting_points_y.append(start.y)
 
+        if should_goal_move:
+            goal_x_points.append(goal_x_points[-1]+1)
+            goal_y_points.append(goal_y_points[-1]-3)
+
+        plan_loop_idx += 1
+
     if goal_reached:
         x_positions.append(goal.x)
         y_positions.append(goal.y)
@@ -282,7 +291,7 @@ def main(_max_depth):
 
     plt.plot(x_positions, y_positions, '-', linewidth=2, label='Path')
     plt.scatter([starting_points_x], [starting_points_y], color='g', label='Startpoints')
-    plt.scatter([goal.x], [goal.y], color='r', label='Goal')
+    plt.scatter([goal_x_points], [goal_y_points], color='r', label='Goal')
     plt.grid(True)
     plt.axis('equal')
     plt.xticks(range(-15, 10))
@@ -299,4 +308,4 @@ def main(_max_depth):
 
 
 if __name__ == "__main__":
-    main(20)
+    main(4, should_goal_move=True)
