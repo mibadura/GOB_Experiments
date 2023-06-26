@@ -273,7 +273,7 @@ def main(_max_depth, should_goal_move=False):
 
         if should_goal_move:
             goal_x_points.append(goal_x_points[-1]+1)
-            goal_y_points.append(goal_y_points[-1]-3)
+            goal_y_points.append(goal_y_points[-1]+0)
 
         plan_loop_idx += 1
 
@@ -291,7 +291,11 @@ def main(_max_depth, should_goal_move=False):
 
     plt.plot(x_positions, y_positions, '-', linewidth=2, label='Path')
     plt.scatter([starting_points_x], [starting_points_y], color='g', label='Startpoints')
+    for i, txt in enumerate(starting_points_x):
+        plt.text(starting_points_x[i] + 0.25, starting_points_y[i] + 0.25, str(i), fontsize=8, color='g')
     plt.scatter([goal_x_points], [goal_y_points], color='r', label='Goal')
+    for i, txt in enumerate(goal_x_points):
+        plt.text(goal_x_points[i] + 0.25, goal_y_points[i] + 0.25, str(i), fontsize=8, color='r')
     plt.grid(True)
     plt.axis('equal')
     plt.xticks(range(-15, 10))
