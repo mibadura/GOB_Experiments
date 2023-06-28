@@ -1,0 +1,180 @@
+{
+    "stats": {
+        "money": 100,
+        "health": 100,
+        "level": 1,
+        "discontentment": 0
+    },
+    "goals": {
+        "Be-Healthy": 50,
+        "Level-Up": 45,
+        "Do-Many-Quests": 30,
+        "Gather-Resources": 40,
+        "Make-Friends": 30,
+        "Learn-Skills": 40,
+        "Gain-Experience": 40,
+        "Earn-Money": 30,
+        "Dont-Be-Hungry": 20,
+        "Dont-Be-Bored": 20
+    },
+    "recurring_changes": {
+        "changed_goals": {
+            "Dont-Be-Hungry": -2,
+            "Dont-Be-Bored": -2,
+            "Gain-Experience": -2,
+            "Make-Friends": -1
+        },
+        "changed_stats": {
+            "health": -2
+        }
+    },
+    "actions": [
+        {"name":"Fight-Monster",
+            "goalsChange":[
+                {"name":"Be-Healthy","value":-10},
+                {"name":"Level-Up","value":30},
+                {"name":"Do-Many-Quests","value":-10},
+                {"name":"Gather-Resources","value":-10},
+                {"name":"Make-Friends","value":-5},
+                {"name":"Learn-Skills","value":10},
+                {"name":"Gain-Experience","value":15},
+                {"name":"Earn-Money","value":5},
+                {"name":"Dont-Be-Hungry","value":-10},
+                {"name":"Dont-Be-Bored","value":10}
+            ],
+            "statsChange":[
+                {"name":"money","value":0},
+                {"name":"health","value":-10},
+                {"name":"level","value":2}
+            ],
+            "preconditions": [
+                {"where": "stats", "what": "health", "logical_test": ">", "value":  50},
+                {"where": "stats", "what": "level", "logical_test": ">=", "value":  2}
+            ]
+        },
+        {"name":"Craft-Item",
+            "goalsChange":[
+                {"name":"Be-Healthy","value":-1},
+                {"name":"Level-Up","value":15},
+                {"name":"Do-Many-Quests","value":10},
+                {"name":"Gather-Resources","value":-10},
+                {"name":"Make-Friends","value":-1},
+                {"name":"Learn-Skills","value":20},
+                {"name":"Gain-Experience","value":15},
+                {"name":"Earn-Money","value":-1},
+                {"name":"Dont-Be-Bored","value":-10}
+            ],
+            "statsChange":[
+                {"name":"money","value":0},
+                {"name":"health","value":0},
+                {"name":"level","value":1}
+            ],
+            "preconditions": [
+                {"where": "stats", "what": "level", "logical_test": ">=", "value":  2}
+            ]
+        },
+        {"name":"Eat-Nice-Stuff",
+            "goalsChange":[
+                {"name":"Be-Healthy","value":5},
+                {"name":"Level-Up","value":5},
+                {"name":"Do-Many-Quests","value":0},
+                {"name":"Gather-Resources","value":-10},
+                {"name":"Make-Friends","value":1},
+                {"name":"Learn-Skills","value":0},
+                {"name":"Gain-Experience","value":1},
+                {"name":"Earn-Money","value":-1},
+                {"name":"Dont-Be-Hungry","value":30},
+                {"name":"Dont-Be-Bored","value":10}
+            ],
+            "statsChange":[
+                {"name":"money","value":-10},
+                {"name":"health","value":10},
+                {"name":"level","value":1}
+            ],
+            "preconditions": [
+                {"where": "stats", "what": "money", "logical_test": ">=", "value":  20}
+            ]
+        },
+        {"name":"Explore-Dungeon",
+            "goalsChange":[
+                {"name":"Be-Healthy","value":-5},
+                {"name":"Level-Up","value":8},
+                {"name":"Do-Many-Quests","value":-5},
+                {"name":"Gather-Resources","value":10},
+                {"name":"Make-Friends","value":0},
+                {"name":"Learn-Skills","value":5},
+                {"name":"Gain-Experience","value":15},
+                {"name":"Earn-Money","value":15},
+                {"name":"Dont-Be-Hungry","value":-10},
+                {"name":"Dont-Be-Bored","value":10}
+            ],
+            "statsChange":[
+                {"name":"money","value":5},
+                {"name":"health","value":-10},
+                {"name":"level","value":0}
+            ],
+            "preconditions": [{"where": "stats", "what": "health", "logical_test": ">=", "value":  75}]
+        },
+        {"name":"Trade-with-NPC",
+            "goalsChange":[
+                {"name":"Be-Healthy","value":0},
+                {"name":"Level-Up","value":10},
+                {"name":"Do-Many-Quests","value":10},
+                {"name":"Gather-Resources","value":10},
+                {"name":"Make-Friends","value":15},
+                {"name":"Learn-Skills","value":5},
+                {"name":"Gain-Experience","value":10},
+                {"name":"Earn-Money","value":15},
+                {"name":"Dont-Be-Bored","value":-10}
+            ],
+            "statsChange":[
+                {"name":"money","value":-30},
+                {"name":"health","value":0},
+                {"name":"level","value":1}
+            ],
+            "preconditions": [
+                {"where": "stats", "what": "money", "logical_test": ">=", "value":  50}
+            ]
+        },
+        {"name":"Train",
+            "goalsChange":[
+                {"name":"Be-Healthy","value":20},
+                {"name":"Level-Up","value":10},
+                {"name":"Do-Many-Quests","value":-5},
+                {"name":"Gather-Resources","value":-5},
+                {"name":"Make-Friends","value":-5},
+                {"name":"Learn-Skills","value":15},
+                {"name":"Gain-Experience","value":10},
+                {"name":"Earn-Money","value":-1},
+                {"name":"Dont-Be-Hungry","value":-10},
+                {"name":"Dont-Be-Bored","value":-10}
+            ],
+            "statsChange":[
+                {"name":"money","value":0},
+                {"name":"health","value":5},
+                {"name":"level","value":1}
+            ],
+            "preconditions": []
+        },
+        {"name":"Pick-Shrooms",
+            "goalsChange":[
+                {"name":"Be-Healthy","value":1},
+                {"name":"Level-Up","value":1},
+                {"name":"Do-Many-Quests","value":0},
+                {"name":"Gather-Resources","value":5},
+                {"name":"Make-Friends","value":-2},
+                {"name":"Learn-Skills","value":1},
+                {"name":"Gain-Experience","value":0},
+                {"name":"Earn-Money","value":0},
+                {"name":"Dont-Be-Hungry","value":-10},
+                {"name":"Dont-Be-Bored","value":-10}
+            ],
+            "statsChange":[
+                {"name":"money","value":0},
+                {"name":"health","value":0},
+                {"name":"level","value":0}
+            ],
+            "preconditions": []
+        }
+    ]
+}
