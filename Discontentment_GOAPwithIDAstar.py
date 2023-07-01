@@ -27,7 +27,7 @@ class WorldState:
         return discontentment
 
     def apply_action(self, action):
-        for goal_change in action["goalsChange"]:
+        for goal_change in action.single_action["goalsChange"]:
             goal_name = goal_change["name"]
             if goal_name in self.goals:
 
@@ -38,8 +38,8 @@ class WorldState:
                 elif self.goals[goal_name] < self.MIN_GOAL_VALUE:
                     self.goals[goal_name] = self.MIN_GOAL_VALUE
 
-        if "statsChange" in action:
-            for stat_change in action["statsChange"]:
+        if "statsChange" in action.single_action:
+            for stat_change in action.single_action["statsChange"]:
                 stat_name = stat_change["name"]
                 if stat_name in self.stats:
                     self.stats[stat_name] += stat_change["value"]
@@ -86,7 +86,7 @@ class Obstacles:
     def preconditions_met(self, _action, _stats):
         preconditions_met_bool = True
 
-        for idx, precondition in enumerate(_action["preconditions"]):
+        for idx, precondition in enumerate(_action.single_action["preconditions"]):
 
             if precondition["where"] == "stats":
                 current_value = _stats[precondition["what"]]
@@ -101,25 +101,25 @@ class Obstacles:
 
 
 class Goal:
-    def __init__(self, x, y):
-        self.x = x
-        self.y = y
+    def __init__(self, _target_discontentment):
+        self.target_discontentment = _target_discontentment
 
-    def is_fulfilled(self, state):
-        return self.x == state.x and self.y == state.y
+    def is_fulfilled(self, world_state):
+        return self.target_discontentment == world_state.discontentment
 
 
 class Action:
 
-    def __init__(self, actions_setup_json):
-        self.actions = actions_setup_json
+    def __init__(self, _single_action, _all_actions):
+        self.single_action = _single_action
+        self.all_actions = _all_actions
 
     @staticmethod
     def get_cost():
         return 1
 
     def get_all_actions(self):
-        return self.actions
+        return [Action(action_dict, self.all_actions) for action_dict in self.all_actions]
 
 
 class Heuristic:
@@ -127,7 +127,7 @@ class Heuristic:
         self.goal = goal
 
     def estimate(self, state):
-        return abs(self.goal.x - state.x) + abs(self.goal.y - state.y)
+        return state.discontentment
 
 
 class TranspositionTable:
@@ -190,11 +190,6 @@ def do_depth_first(world_model, goal, heuristic, transposition_table, max_depth,
         print(f'\tdo_depth_first:\tdepth: {current_depth};\tstate {states[current_depth]};\tcost {cost};'
               f'\tcutoff: {cutoff}')
 
-        if obstacles.is_point_in_polygon((states[current_depth].x, states[current_depth].y)):
-            print(f'\tdo_depth_first: in polygon! {(states[current_depth].x, states[current_depth].y)}')
-            current_depth -= 1
-            continue
-
         if goal.is_fulfilled(states[current_depth]):
             print('\n','-'*10,f' Goal {states[current_depth]} is fulfilled ','-'*10)
             return cutoff, actions, True
@@ -216,6 +211,11 @@ def do_depth_first(world_model, goal, heuristic, transposition_table, max_depth,
 
         next_action, next_action_idx = states[current_depth].next_action()
         if next_action:
+            if obstacles.preconditions_met(next_action, states[current_depth].stats):
+                print(f'\tdo_depth_first: preconditions not met')
+                current_depth -= 1
+                continue
+
             states[current_depth + 1] = states[current_depth].copy()
             states[current_depth + 1].apply_action(next_action)
 
@@ -231,14 +231,6 @@ def do_depth_first(world_model, goal, heuristic, transposition_table, max_depth,
                 print(f'\n\tdo_depth_first: simulating move {states[current_depth]} -> {states[current_depth + 1]} '
                       f'| already in transpo. trying next move ')
 
-            # Check is midpoint is in obstacle (prevents crossing 1-wide obstacles)
-            midpoint = ((states[current_depth].x + states[current_depth - 1].x) / 2, (states[current_depth].y +
-                                                                                      states[current_depth - 1].y) / 2)
-            if obstacles.is_point_in_polygon(midpoint):
-                print(f'\tdo_depth_first: midpoint in polygon! {midpoint}')
-                current_depth -= 1
-                continue
-
         else:
             current_depth -= 1
             print(f'\tdo_depth_first: no more actions: depth decreased')
@@ -246,113 +238,101 @@ def do_depth_first(world_model, goal, heuristic, transposition_table, max_depth,
     return smallest_cutoff, best_path, False
 
 
-# def main(_max_depth, should_goal_move=False):
-#     main_start_time = time.time()
-#     orig_stdout = sys.stdout
-#     f = open('out.txt', 'w')
-#     sys.stdout = f
-#
-#     actions = Action.get_all_actions()
-#
-#     start = WorldState(0, 0, actions)
-#     goal_x_points = [-5]
-#     goal_y_points = [10]
-#     max_plan_loops = 20
-#
-#     obstacles = Obstacles()
-#
-#     goal_reached = False
-#     plan_loop_idx = 0
-#
-#     x_positions = [start.x]
-#     y_positions = [start.y]
-#     starting_points_x = [start.x]
-#     starting_points_y = [start.y]
-#     current_state = start
-#
-#     while not goal_reached and plan_loop_idx < max_plan_loops:
-#
-#         goal = Goal(goal_x_points[-1], goal_y_points[-1])
-#         heuristic = Heuristic(goal)
-#
-#         start_time = time.time()
-#         single_plan, goal_reached = plan_action(start, goal, heuristic, obstacles=obstacles, max_depth=_max_depth)
-#         end_time = time.time()
-#         print(f'Plan_action execution took {end_time - start_time} seconds.')
-#
-#         if single_plan and not goal_reached:
-#             print("Partial plan found.")
-#         elif single_plan and goal_reached:
-#             print("Final plan found.")
-#             should_goal_move = False
-#         else:
-#             print('No plan at all.')
-#             break
-#
-#         if single_plan:
-#             for action in single_plan:
-#                 if action is None:
-#                     break
-#                 current_state = current_state.copy()
-#                 current_state.apply_action(action)
-#                 x_positions.append(current_state.x)
-#                 y_positions.append(current_state.y)
-#
-#         start = current_state.copy()
-#         starting_points_x.append(start.x)
-#         starting_points_y.append(start.y)
-#
-#         if should_goal_move:
-#             goal_x_points.append(goal_x_points[-1]+1)
-#             goal_y_points.append(goal_y_points[-1]+0)
-#
-#         plan_loop_idx += 1
-#
-#     if goal_reached:
-#         x_positions.append(goal.x)
-#         y_positions.append(goal.y)
-#
-#     print(f'Plan length: {len(x_positions)-2}')
-#     plt.figure(dpi=200)
-#
-#     polygons = obstacles.get_obstacle_polygons()
-#     for polygon in polygons:
-#         x, y = polygon.exterior.xy
-#         plt.fill(x, y, alpha=0.5, label='Obstacle')  # fill with colors
-#
-#     plt.plot(x_positions, y_positions, '-', linewidth=2, label='Path')
-#     plt.scatter([starting_points_x], [starting_points_y], color='g', label='Startpoints')
-#     for i, txt in enumerate(starting_points_x):
-#         plt.text(starting_points_x[i] + 0.25, starting_points_y[i] + 0.25, str(i), fontsize=8, color='g')
-#     plt.scatter([goal_x_points], [goal_y_points], color='r', label='Goal')
-#     for i, txt in enumerate(goal_x_points):
-#         plt.text(goal_x_points[i] + 0.25, goal_y_points[i] + 0.25, str(i), fontsize=8, color='r')
-#     plt.grid(True)
-#     plt.axis('equal')
-#     plt.xticks(range(-15, 10))
-#     plt.yticks(range(-3, 15))
-#     plt.legend()
-#     # plt.show()
-#     plt.savefig(f'./PointSearchingFigs/PointSearching_GOAPwithIDAstar_MaxDepth-{_max_depth}.jpg', dpi=200)
-#     plt.close()
-#
-#     sys.stdout = orig_stdout
-#     f.close()
-#     main_end_time = time.time()
-#     return main_end_time-main_start_time
+def main(_max_depth):
+    main_start_time = time.time()
+    orig_stdout = sys.stdout
+    f = open('out_discontentment.txt', 'w')
+    sys.stdout = f
 
-def main(max_depth):
-
-    filename = 'setup_2.json'
+    setup_filename = 'setup_2.json'
 
     # Load setup file
-    with open(filename, "r") as file:
-        setup = json.load(file)
+    with open(setup_filename, "r") as file:
+        setup_file = json.load(file)
 
-    actions = Action(setup['actions'])
+    actions = Action(None, setup_file['actions']).get_all_actions()
 
-    print(type(actions.get_all_actions()))
+    start = WorldState(setup_file['stats'], setup_file['goals'], actions)
+    max_plan_loops = 20
+
+    obstacles = Obstacles()
+
+    goal_reached = False
+    plan_loop_idx = 0
+
+    start.discontentment = start.calculate_current_discontentment()
+
+    list_disconts = [start.discontentment]
+    current_state = start
+
+    while not goal_reached and plan_loop_idx < max_plan_loops:
+
+        goal = Goal(current_state.discontentment*0.9)
+        heuristic = Heuristic(goal)
+
+        start_time = time.time()
+        single_plan, goal_reached = plan_action(start, goal, heuristic, obstacles=obstacles, max_depth=_max_depth)
+        end_time = time.time()
+        print(f'Plan_action execution took {end_time - start_time} seconds.')
+
+        if single_plan and not goal_reached:
+            print("Partial plan found.")
+        elif single_plan and goal_reached:
+            print("Final plan found.")
+        else:
+            print('No plan at all.')
+            break
+
+        if single_plan:
+            for action in single_plan:
+                if action is None:
+                    break
+                current_state = current_state.copy()
+                current_state.apply_action(action)
+                list_disconts.append(current_state.x)
+
+        start = current_state.copy()
+        plan_loop_idx += 1
+
+    if goal_reached:
+        list_disconts.append(goal.target_discontentment)
+
+    print(f'Plan length: {len(list_disconts)-2}')
+    # plt.figure(dpi=200)
+    #
+    # plt.plot(list_disconts, y_positions, '-', linewidth=2, label='Path')
+    # plt.scatter([starting_points_x], [starting_points_y], color='g', label='Startpoints')
+    # for i, txt in enumerate(starting_points_x):
+    #     plt.text(starting_points_x[i] + 0.25, starting_points_y[i] + 0.25, str(i), fontsize=8, color='g')
+    # plt.scatter([goal_x_points], [goal_y_points], color='r', label='Goal')
+    # for i, txt in enumerate(goal_x_points):
+    #     plt.text(goal_x_points[i] + 0.25, goal_y_points[i] + 0.25, str(i), fontsize=8, color='r')
+    # plt.grid(True)
+    # plt.axis('equal')
+    # plt.xticks(range(-15, 10))
+    # plt.yticks(range(-3, 15))
+    # plt.legend()
+    # plt.show()
+    # # plt.savefig(f'./DiscontentmentFigs/Discontentment_GOAPwithIDAstar_MaxDepth-{_max_depth}.jpg', dpi=200)
+    # # plt.close()
+
+    sys.stdout = orig_stdout
+    f.close()
+    main_end_time = time.time()
+    return main_end_time-main_start_time
+#
+# def main(max_depth):
+#
+#     filename = 'setup_2.json'
+#
+#     # Load setup file
+#     with open(filename, "r") as file:
+#         setup = json.load(file)
+#
+#     actions = Action(setup['actions'])
+#
+#     print(type(actions.get_all_actions()))
 
 
 if __name__ == "__main__":
-    main(4)
+    main(10)
