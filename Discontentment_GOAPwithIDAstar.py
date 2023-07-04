@@ -4,6 +4,7 @@ from shapely.geometry import Point, Polygon, LineString
 import time
 import operator
 import json
+import copy
 
 
 class WorldState:
@@ -15,10 +16,10 @@ class WorldState:
         self.goals = _goals
         self.actions = _actions
         self.action_index = 0
-        self.discontentment = float('inf')
+        self.discontentment = self.calculate_current_discontentment()
 
     def copy(self):
-        return WorldState(self.stats, self.goals, self.actions)
+        return WorldState(copy.deepcopy(self.stats), copy.deepcopy(self.goals), copy.deepcopy(self.actions))
 
     def calculate_current_discontentment(self):
         discontentment = 0.0
@@ -31,7 +32,7 @@ class WorldState:
             goal_name = goal_change["name"]
             if goal_name in self.goals:
 
-                self.goals[goal_name] += goal_change["value"]
+                self.goals[goal_name] -= goal_change["value"]
 
                 if self.goals[goal_name] > self.MAX_GOAL_VALUE:
                     self.goals[goal_name] = self.MAX_GOAL_VALUE
@@ -44,7 +45,9 @@ class WorldState:
                 if stat_name in self.stats:
                     self.stats[stat_name] += stat_change["value"]
 
-        self.discontentment = self.calculate_current_discontentment()
+        new_calculated_discontentment = self.calculate_current_discontentment()
+        # print(f'\t\tworldState: new_calculated_discontentment = {new_calculated_discontentment}')
+        self.discontentment = new_calculated_discontentment
 
     def next_action(self):
         if self.action_index < len(self.actions):
@@ -95,6 +98,7 @@ class Obstacles:
                 logical_test_result = self.ops[precondition["logical_test"]](current_value, precondition_value)
 
                 if not logical_test_result:
+                    print(f'\t\tobstacles: failed {precondition["what"]} {precondition["logical_test"]} {precondition["value"]}')
                     preconditions_met_bool = False
 
         return preconditions_met_bool
@@ -105,7 +109,7 @@ class Goal:
         self.target_discontentment = _target_discontentment
 
     def is_fulfilled(self, world_state):
-        return self.target_discontentment == world_state.discontentment
+        return self.target_discontentment >= world_state.discontentment
 
 
 class Action:
@@ -117,6 +121,9 @@ class Action:
     @staticmethod
     def get_cost():
         return 1
+
+    def get_name(self):
+        return self.single_action['name']
 
     def get_all_actions(self):
         return [Action(action_dict, self.all_actions) for action_dict in self.all_actions]
@@ -159,7 +166,7 @@ def plan_action(world_model, goal, heuristic, max_depth,  obstacles = None):
                 print(f'plan_action: goal not reached')
                 print(f'best plan so far:')
                 for action in actions:
-                    print(f'{action.dx, action.dy}')
+                    print(f'{action.get_name()}')
 
     return actions, goal_reached
 
@@ -175,7 +182,7 @@ def do_depth_first(world_model, goal, heuristic, transposition_table, max_depth,
     world_model.action_index = 0
     states[0] = world_model
     current_depth = 0
-
+    print(f'\tdo_depth_first: starting worldModel: {states[0]}')
     transposition_table.add(states[current_depth], current_depth)   # add the starting point to transposition table
 
     smallest_cutoff = float('inf')
@@ -187,14 +194,15 @@ def do_depth_first(world_model, goal, heuristic, transposition_table, max_depth,
 
         heuristic_estimate = heuristic.estimate(states[current_depth])
         cost = costs[current_depth] + heuristic_estimate
-        print(f'\tdo_depth_first:\tdepth: {current_depth};\tstate {states[current_depth]};\tcost {cost};'
+        print(f'\tdo_depth_first:\tdepth: {current_depth};\tstate discontentment {states[current_depth].discontentment};\tcost {cost};'
               f'\tcutoff: {cutoff}')
 
         if goal.is_fulfilled(states[current_depth]):
-            print('\n','-'*10,f' Goal {states[current_depth]} is fulfilled ','-'*10)
+            print('\n','-'*10,f' Goal {goal.target_discontentment} is fulfilled. Current discontentment is {states[current_depth].discontentment}','-'*10)
             return cutoff, actions, True
 
         if heuristic_estimate < best_cost:
+            print(f'\tdo_depth_first: heuristic_estimate {heuristic_estimate} lower than best_cost {best_cost}')
             best_cost = heuristic_estimate
             best_path = actions[:current_depth]
 
@@ -204,6 +212,7 @@ def do_depth_first(world_model, goal, heuristic, transposition_table, max_depth,
             continue
 
         if cost > cutoff:
+            print(f'\tdo_depth_first: cost bigger than cutoff ({cost} > {cutoff})')
             if cost < smallest_cutoff:
                 smallest_cutoff = cost
             current_depth -= 1
@@ -211,10 +220,7 @@ def do_depth_first(world_model, goal, heuristic, transposition_table, max_depth,
 
         next_action, next_action_idx = states[current_depth].next_action()
         if next_action:
-            if obstacles.preconditions_met(next_action, states[current_depth].stats):
-                print(f'\tdo_depth_first: preconditions not met')
-                current_depth -= 1
-                continue
+            print(f'\tdo_depth_first: action, action_idx: {next_action.get_name(), next_action_idx}')
 
             states[current_depth + 1] = states[current_depth].copy()
             states[current_depth + 1].apply_action(next_action)
@@ -223,13 +229,18 @@ def do_depth_first(world_model, goal, heuristic, transposition_table, max_depth,
             costs[current_depth + 1] = costs[current_depth] + next_action.get_cost()
 
             if not transposition_table.has(states[current_depth + 1], current_depth + 1):
-                print(f'\n\tdo_depth_first: simulating move {states[current_depth]} -> {states[current_depth + 1]} '
+                print(f'\n\tdo_depth_first: simulating move {states[current_depth].discontentment} -> {states[current_depth + 1].discontentment} '
                       f'| new move! adding to transpo table ')
                 current_depth += 1
                 transposition_table.add(states[current_depth], current_depth)
             else:
-                print(f'\n\tdo_depth_first: simulating move {states[current_depth]} -> {states[current_depth + 1]} '
+                print(f'\n\tdo_depth_first: simulating move {states[current_depth].discontentment} -> {states[current_depth + 1].discontentment} '
                       f'| already in transpo. trying next move ')
+
+            if not obstacles.preconditions_met(next_action, states[current_depth-1].stats):
+                print(f'\tdo_depth_first: preconditions not met')
+                current_depth -= 1
+                continue
 
         else:
             current_depth -= 1
@@ -263,12 +274,14 @@ def main(_max_depth):
     start.discontentment = start.calculate_current_discontentment()
 
     list_disconts = [start.discontentment]
-    current_state = start
+    list_actions = []
+    current_state = start.copy()
 
     while not goal_reached and plan_loop_idx < max_plan_loops:
 
-        goal = Goal(current_state.discontentment*0.9)
+        goal = Goal(list_disconts[0]*0.2)
         heuristic = Heuristic(goal)
+        print(f'\tmain: goal discontentment = {goal.target_discontentment}')
 
         start_time = time.time()
         single_plan, goal_reached = plan_action(start, goal, heuristic, obstacles=obstacles, max_depth=_max_depth)
@@ -279,23 +292,24 @@ def main(_max_depth):
             print("Partial plan found.")
         elif single_plan and goal_reached:
             print("Final plan found.")
+            print(list_actions)
         else:
             print('No plan at all.')
             break
 
         if single_plan:
-            for action in single_plan:
+            for action_idx, action in enumerate(single_plan):
                 if action is None:
                     break
                 current_state = current_state.copy()
                 current_state.apply_action(action)
-                list_disconts.append(current_state.x)
+                list_disconts.append(current_state.discontentment)
+                list_actions.append(action.get_name())
+                print(f'Action #{action_idx}: {action.get_name()}')
 
         start = current_state.copy()
         plan_loop_idx += 1
 
-    if goal_reached:
-        list_disconts.append(goal.target_discontentment)
 
     print(f'Plan length: {len(list_disconts)-2}')
     # plt.figure(dpi=200)
@@ -335,4 +349,4 @@ def main(_max_depth):
 
 
 if __name__ == "__main__":
-    main(10)
+    main(3)
