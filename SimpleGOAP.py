@@ -8,7 +8,7 @@ import math
 
 current_top_action = {}
 
-with open("setup_with_percentages.json", "r") as file:
+with open("setup_2.json", "r") as file:
     goalsAndActionsJson = json.load(file)
 
 ops = {
@@ -169,22 +169,25 @@ def main(_iterations):
     print("Starting goals are", goalsAndActionsJson["goals"])
     all_chosen_actions = []
     stats_list = []
+    discont_list = []
     goals_list = []
     goal_values = []
     for i in range(_iterations):
         print("\nRound", i)
         print("Stats:", goalsAndActionsJson["stats"])
-        stats_list.append(goalsAndActionsJson["stats"].copy())
-        goals_list.append(goalsAndActionsJson["goals"].copy())
+
         chosen_action, chosen_action_discontentment = choose_action(goalsAndActionsJson["actions"], goalsAndActionsJson["goals"])
         print("Chosen action:\t", chosen_action)
         all_chosen_actions.append(chosen_action["name"])
         print("Goals before:\t", goalsAndActionsJson["goals"])
-        recurring_changes_update()
+        # recurring_changes_update()
         update_goals(current_top_action)
         goal_values.append(list(goalsAndActionsJson["goals"].values()))
         update_stats(goalsAndActionsJson["stats"], current_top_action, chosen_action_discontentment)
         print("Goals are now:\t", goalsAndActionsJson["goals"])
+        stats_list.append(goalsAndActionsJson["stats"].copy())
+        discont_list.append(goalsAndActionsJson["stats"]["discontentment"])
+        goals_list.append(goalsAndActionsJson["goals"].copy())
 
     print("all_chosen_actions", all_chosen_actions)
     print("stats_list", stats_list)
@@ -217,7 +220,8 @@ def main(_iterations):
 
     print("All chosen acitons:\n", all_chosen_actions)
     print("All stats:\n", stats_list)
+    print("All discontentments:\n", discont_list, f"| sum = {sum(discont_list)}'")
     # print("All goals:\n", goal_values)
 
 if __name__ == '__main__':
-    main()
+    main(17)

@@ -249,6 +249,45 @@ def do_depth_first(world_model, goal, heuristic, transposition_table, max_depth,
     return smallest_cutoff, best_path, False
 
 
+def plot_goals(goals_list):
+    plt.figure()
+    goal_keys = list(goals_list[0].keys())
+    for key in goal_keys:
+        goal_values = [d[key] for d in goals_list]
+        plt.plot(goal_values, label=key)
+
+    plt.title('Goals over time')
+    plt.xlabel('Iteration')
+    plt.ylabel('Value')
+    plt.legend()
+    plt.savefig('./DiscontentmentIDAstarFigs/Discontentment_GOAPwithIDAstar_Goals.jpg', dpi=300)
+    plt.close()
+
+def plot_stats(stats_list):
+    plt.figure()
+    stat_keys = list(stats_list[0].keys())
+    for key in stat_keys:
+        stat_values = [d[key] for d in stats_list]
+        plt.plot(stat_values, label=key)
+
+    plt.title('Stats over time')
+    plt.xlabel('Iteration')
+    plt.ylabel('Value')
+    plt.legend()
+    plt.savefig('./DiscontentmentIDAstarFigs/Discontentment_GOAPwithIDAstar_Stats.jpg', dpi=300)
+    plt.close()
+
+def plot_discontentment(discontentment_list):
+    plt.figure()
+    plt.plot(discontentment_list, label='Discontentment')
+    plt.title('Discontentment over time')
+    plt.xlabel('Iteration')
+    plt.ylabel('Value')
+    plt.legend()
+    plt.savefig('./DiscontentmentIDAstarFigs/Discontentment_GOAPwithIDAstar_Discontentment.jpg', dpi=300)
+    plt.close()
+
+
 def main(_max_depth):
     main_start_time = time.time()
     orig_stdout = sys.stdout
@@ -275,11 +314,14 @@ def main(_max_depth):
 
     list_disconts = [start.discontentment]
     list_actions = []
+    list_goals = []
+    list_stats = []
     current_state = start.copy()
+    goal_unreachable = False
 
-    while not goal_reached and plan_loop_idx < max_plan_loops:
+    while not goal_reached and plan_loop_idx < max_plan_loops and not goal_unreachable:
 
-        goal = Goal(list_disconts[0]*0.2)
+        goal = Goal(list_disconts[0]*0.15)
         heuristic = Heuristic(goal)
         print(f'\tmain: goal discontentment = {goal.target_discontentment}')
 
@@ -294,8 +336,11 @@ def main(_max_depth):
             print("Final plan found.")
             print(list_actions)
         else:
-            print('No plan at all.')
-            break
+            print('No plan for reaching the goal. Goal unreachable.')
+            # print("The best plan we found:")
+            # print(list_actions)
+            # break
+            goal_unreachable = True
 
         if single_plan:
             for action_idx, action in enumerate(single_plan):
@@ -305,48 +350,31 @@ def main(_max_depth):
                 current_state.apply_action(action)
                 list_disconts.append(current_state.discontentment)
                 list_actions.append(action.get_name())
-                print(f'Action #{action_idx}: {action.get_name()}')
+                list_stats.append(copy.deepcopy(current_state.stats))
+                list_goals.append(copy.deepcopy(current_state.goals))
+                print(f'Single plan action #{action_idx}: {action.get_name()}')
+                plot_goals(list_stats)
+                plot_stats(list_goals)
+                plot_discontentment(list_disconts)
 
+        print(f'list_disconts: {list_disconts} | sum (except starting point) = {sum(list_disconts[1:])}')
+        print(f'list_actions: {list_actions}')
+        print(f'list_stats: {list_stats}')
+        print(f'list_goals: {list_goals}')
         start = current_state.copy()
         plan_loop_idx += 1
 
-
-    print(f'Plan length: {len(list_disconts)-2}')
-    # plt.figure(dpi=200)
-    #
-    # plt.plot(list_disconts, y_positions, '-', linewidth=2, label='Path')
-    # plt.scatter([starting_points_x], [starting_points_y], color='g', label='Startpoints')
-    # for i, txt in enumerate(starting_points_x):
-    #     plt.text(starting_points_x[i] + 0.25, starting_points_y[i] + 0.25, str(i), fontsize=8, color='g')
-    # plt.scatter([goal_x_points], [goal_y_points], color='r', label='Goal')
-    # for i, txt in enumerate(goal_x_points):
-    #     plt.text(goal_x_points[i] + 0.25, goal_y_points[i] + 0.25, str(i), fontsize=8, color='r')
-    # plt.grid(True)
-    # plt.axis('equal')
-    # plt.xticks(range(-15, 10))
-    # plt.yticks(range(-3, 15))
-    # plt.legend()
-    # plt.show()
-    # # plt.savefig(f'./DiscontentmentFigs/Discontentment_GOAPwithIDAstar_MaxDepth-{_max_depth}.jpg', dpi=200)
-    # # plt.close()
+    plot_goals(list_stats)
+    plot_stats(list_goals)
+    plot_discontentment(list_disconts)
+    print(f'Plan length: {len(list_disconts)-1}')
 
     sys.stdout = orig_stdout
     f.close()
     main_end_time = time.time()
     return main_end_time-main_start_time
-#
-# def main(max_depth):
-#
-#     filename = 'setup_2.json'
-#
-#     # Load setup file
-#     with open(filename, "r") as file:
-#         setup = json.load(file)
-#
-#     actions = Action(setup['actions'])
-#
-#     print(type(actions.get_all_actions()))
 
 
 if __name__ == "__main__":
-    main(3)
+    execution_time = main(3)
+    print(f'Program execution time: {round(execution_time, 3)}s')
